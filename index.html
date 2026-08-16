@@ -61,12 +61,16 @@
   const API_URL = 'https://script.google.com/macros/s/AKfycbw7QqZ8LAUmBjmvqJrc4blBkjfe1igMu24fCyQP9epk0NRwFceQ9kdINitBHvMtD--X/exec';
 
   let SCHEDULE = [];
-  const marks = {}; // rut -> {codigo, motivo, horasExtra}
+  let PERSONAL_ALL = [];
+  const marks = {}; // rut -> {codigo, motivo, horasExtra, reemplazante, motivoHorasExtra}
 
-  fetch(API_URL + '?action=schedule')
-    .then(function(r){ return r.json(); })
-    .then(render)
-    .catch(showError);
+  Promise.all([
+    fetch(API_URL + '?action=schedule').then(function(r){ return r.json(); }),
+    fetch(API_URL + '?action=meta').then(function(r){ return r.json(); })
+  ]).then(function(results) {
+    PERSONAL_ALL = results[1].personal || [];
+    render(results[0]);
+  }).catch(showError);
 
   function showError(err) {
     document.getElementById('wrap').innerHTML = '<div class="empty">Error al cargar: ' + err.message + '<br><br>Revisa que API_URL esté configurada en Index.html.</div>';
@@ -95,6 +99,7 @@
 
   function cardHtml(p) {
     const marcado = p.yaMarcado;
+    const reemplazoOpts = PERSONAL_ALL.filter(x => x.rut !== p.rut).map(x => '<option value="' + x.rut + '">' + x.nombre + '</option>').join('');
     return (
       '<div class="card" id="card-' + p.rut + '">' +
         '<div class="nombre">' + p.nombre + '</div>' +
@@ -110,11 +115,15 @@
               '<div class="btn presente" onclick="marcar(\'' + p.rut + '\',\'P\')" id="btnP-' + p.rut + '">Presente</div>' +
               '<div class="btn ausente" onclick="marcar(\'' + p.rut + '\',\'A\')" id="btnA-' + p.rut + '">Ausente</div>' +
             '</div>' +
-            '<select class="motivo" id="motivo-' + p.rut + '" style="display:none" onchange="setMotivo(\'' + p.rut + '\', this.value)">' +
+            '<select class="motivo" id="motivo-' + p.rut + '" style="display:none" onchange="setCampo(\'' + p.rut + '\',\'motivo\',this.value)">' +
               '<option value="">Motivo...</option>' +
               '<option>Médica</option><option>Personal</option><option>Injustificada</option><option>Sin aviso</option>' +
             '</select>' +
-            '<input class="horas" type="number" min="0" step="0.5" placeholder="Horas extra (opcional)" onchange="setHoras(\'' + p.rut + '\', this.value)">'
+            '<select class="motivo" id="reemplazante-' + p.rut + '" style="display:none" onchange="setCampo(\'' + p.rut + '\',\'reemplazante\',this.value)">' +
+              '<option value="">¿Quién lo reemplaza? (opcional)</option>' + reemplazoOpts +
+            '</select>' +
+            '<input class="horas" type="number" min="0" step="0.5" placeholder="Horas extra (opcional)" onchange="setCampo(\'' + p.rut + '\',\'horasExtra\',this.value)">' +
+            '<input class="horas" type="text" placeholder="Motivo de la hora extra (opcional)" onchange="setCampo(\'' + p.rut + '\',\'motivoHorasExtra\',this.value)">'
           )
         ) +
       '</div>'
@@ -127,10 +136,10 @@
     document.getElementById('btnP-' + rut).classList.toggle('active', codigo === 'P');
     document.getElementById('btnA-' + rut).classList.toggle('active', codigo === 'A');
     document.getElementById('motivo-' + rut).style.display = (codigo === 'A') ? 'block' : 'none';
+    document.getElementById('reemplazante-' + rut).style.display = (codigo === 'A') ? 'block' : 'none';
     updateSaveButton();
   }
-  function setMotivo(rut, v) { marks[rut] = marks[rut] || {}; marks[rut].motivo = v; }
-  function setHoras(rut, v) { marks[rut] = marks[rut] || {}; marks[rut].horasExtra = v; }
+  function setCampo(rut, campo, v) { marks[rut] = marks[rut] || {}; marks[rut][campo] = v; }
 
   function updateSaveButton() {
     const n = Object.keys(marks).filter(function(r){ return marks[r].codigo; }).length;
@@ -144,10 +153,12 @@
     SCHEDULE.forEach(function(p) {
       const m = marks[p.rut];
       if (m && m.codigo) {
+        const reemplazanteNombre = m.reemplazante ? (PERSONAL_ALL.find(x => x.rut === m.reemplazante) || {}).nombre : '';
         records.push({
           rut: p.rut, nombre: p.nombre, codigo: m.codigo,
           motivo: m.motivo || '', horasExtra: m.horasExtra || '',
-          torre: p.torre, turnoNombre: p.turnoNombre
+          torre: p.torre, turnoNombre: p.turnoNombre,
+          reemplazante: reemplazanteNombre || '', motivoHorasExtra: m.motivoHorasExtra || ''
         });
       }
     });
