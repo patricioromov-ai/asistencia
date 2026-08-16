@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Asistencia — JDVM</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; padding: 0; color: #1b1f27; }
+    header { background: linear-gradient(120deg, #1f3a5f, #2f6690); color: #fff; padding: 16px 18px; }
+    header h1 { font-size: 16px; margin: 0; }
+    header p { font-size: 12px; opacity: .85; margin: 4px 0 0; }
+    .wrap { padding: 14px; padding-bottom: 90px; }
+    .licencia-box { background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 12px; color: #075985; }
+    .card { background: #fff; border-radius: 14px; padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border: 1px solid #e6e8ec; }
+    .nombre { font-weight: 700; font-size: 14px; }
+    .meta { font-size: 12px; color: #6b7280; margin-top: 2px; }
+    .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
+    .btns { display: flex; gap: 8px; margin-top: 10px; }
+    .btn { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #e6e8ec; background: #fff; font-weight: 700; font-size: 13px; text-align: center; }
+    .btn.presente.active { background: #10b981; color: #fff; border-color: transparent; }
+    .btn.ausente.active { background: #f43f5e; color: #fff; border-color: transparent; }
+    select.motivo, input.horas { width: 100%; margin-top: 8px; padding: 8px; border-radius: 8px; border: 1px solid #e6e8ec; font-size: 13px; }
+    .ya-marcado { font-size: 11px; color: #16a34a; font-weight: 600; margin-top: 6px; }
+    .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e6e8ec; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .save-btn { background: #1f3a5f; color: #fff; border: none; border-radius: 10px; padding: 12px 20px; font-weight: 700; font-size: 14px; width: 100%; }
+    .save-btn:disabled { opacity: .5; }
+    .empty { text-align: center; color: #9aa2ab; font-size: 13px; padding: 30px 10px; }
+    .status { text-align: center; font-size: 12px; color: #16a34a; margin-bottom: 6px; }
+    .loading { text-align: center; padding: 40px; color: #9aa2ab; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Asistencia — JDVM</h1>
+    <p id="fechaLabel">Cargando fecha...</p>
+  </header>
+  <div class="wrap" id="wrap">
+    <div class="loading">Cargando trabajadores del día...</div>
+  </div>
+  <div class="footer">
+    <button class="save-btn" id="saveBtn" onclick="guardar()" disabled>Guardar asistencia</button>
+  </div>
+
+<script>
+  // Pega acá la URL de tu implementación de Apps Script (Deploy > Nueva implementación > Aplicación web)
+  // Ejemplo: https://script.google.com/macros/s/AKfycb.../exec
+  const API_URL = 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT';
+
+  let SCHEDULE = [];
+  const marks = {}; // rut -> {codigo, motivo, horasExtra}
+
+  fetch(API_URL + '?action=schedule')
+    .then(function(r){ return r.json(); })
+    .then(render)
+    .catch(showError);
+
+  function showError(err) {
+    document.getElementById('wrap').innerHTML = '<div class="empty">Error al cargar: ' + err.message + '<br><br>Revisa que API_URL esté configurada en Index.html.</div>';
+  }
+
+  function render(data) {
+    document.getElementById('fechaLabel').textContent = data.fecha + ' · ' + data.diaLabel;
+    SCHEDULE = data.trabajadores;
+
+    let html = '';
+    if (data.conLicenciaHoy && data.conLicenciaHoy.length) {
+      html += '<div class="licencia-box"><b>Con permiso especial hoy:</b><br>' +
+        data.conLicenciaHoy.map(function(p){ return p.nombre + ' — ' + p.tipo + ' hasta ' + p.hasta; }).join('<br>') +
+        '</div>';
+    }
+
+    if (SCHEDULE.length === 0) {
+      html += '<div class="empty">Nadie tiene turno asignado hoy.</div>';
+    } else {
+      SCHEDULE.forEach(function(p) {
+        html += cardHtml(p);
+      });
+    }
+    document.getElementById('wrap').innerHTML = html;
+  }
+
+  function cardHtml(p) {
+    const marcado = p.yaMarcado;
+    return (
+      '<div class="card" id="card-' + p.rut + '">' +
+        '<div class="nombre">' + p.nombre + '</div>' +
+        '<div class="meta">' +
+          '<span class="tag">' + p.depto + '</span>' +
+          '<span class="tag">Torre ' + p.torre + '</span>' +
+          '<span class="tag">' + p.turnoNombre + ' (' + p.horaInicio + '-' + p.horaFin + ')</span>' +
+        '</div>' +
+        (marcado
+          ? '<div class="ya-marcado">Ya marcado hoy: ' + marcado + '</div>'
+          : (
+            '<div class="btns">' +
+              '<div class="btn presente" onclick="marcar(\'' + p.rut + '\',\'P\')" id="btnP-' + p.rut + '">Presente</div>' +
+              '<div class="btn ausente" onclick="marcar(\'' + p.rut + '\',\'A\')" id="btnA-' + p.rut + '">Ausente</div>' +
+            '</div>' +
+            '<select class="motivo" id="motivo-' + p.rut + '" style="display:none" onchange="setMotivo(\'' + p.rut + '\', this.value)">' +
+              '<option value="">Motivo...</option>' +
+              '<option>Médica</option><option>Personal</option><option>Injustificada</option><option>Sin aviso</option>' +
+            '</select>' +
+            '<input class="horas" type="number" min="0" step="0.5" placeholder="Horas extra (opcional)" onchange="setHoras(\'' + p.rut + '\', this.value)">'
+          )
+        ) +
+      '</div>'
+    );
+  }
+
+  function marcar(rut, codigo) {
+    marks[rut] = marks[rut] || {};
+    marks[rut].codigo = codigo;
+    document.getElementById('btnP-' + rut).classList.toggle('active', codigo === 'P');
+    document.getElementById('btnA-' + rut).classList.toggle('active', codigo === 'A');
+    document.getElementById('motivo-' + rut).style.display = (codigo === 'A') ? 'block' : 'none';
+    updateSaveButton();
+  }
+  function setMotivo(rut, v) { marks[rut] = marks[rut] || {}; marks[rut].motivo = v; }
+  function setHoras(rut, v) { marks[rut] = marks[rut] || {}; marks[rut].horasExtra = v; }
+
+  function updateSaveButton() {
+    const n = Object.keys(marks).filter(function(r){ return marks[r].codigo; }).length;
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = n === 0;
+    btn.textContent = n === 0 ? 'Guardar asistencia' : 'Guardar asistencia (' + n + ')';
+  }
+
+  function guardar() {
+    const records = [];
+    SCHEDULE.forEach(function(p) {
+      const m = marks[p.rut];
+      if (m && m.codigo) {
+        records.push({
+          rut: p.rut, nombre: p.nombre, codigo: m.codigo,
+          motivo: m.motivo || '', horasExtra: m.horasExtra || '',
+          torre: p.torre, turnoNombre: p.turnoNombre
+        });
+      }
+    });
+    if (records.length === 0) return;
+    document.getElementById('saveBtn').disabled = true;
+    document.getElementById('saveBtn').textContent = 'Guardando...';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita el preflight CORS que Apps Script no responde
+      body: JSON.stringify({ action: 'submit', records: records })
+    })
+      .then(function(r){ return r.json(); })
+      .then(function(res) {
+        if (res.error) throw new Error(res.error);
+        document.getElementById('wrap').innerHTML = '<div class="status">✓ Guardado — ' + res.count + ' registro(s)</div>';
+        setTimeout(function(){ location.reload(); }, 1200);
+      })
+      .catch(function(err) {
+        alert('Error al guardar: ' + err.message);
+        document.getElementById('saveBtn').disabled = false;
+      });
+  }
+</script>
+</body>
+</html>
