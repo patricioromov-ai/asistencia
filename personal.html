@@ -30,8 +30,12 @@
   .meta { font-size: 12px; color: #6b7280; margin: 3px 0 6px; }
   .meta span { margin-right: 6px; }
   .tags-row { display: flex; flex-wrap: wrap; gap: 4px; }
-  .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: #eef2f7; color: #334155; margin: 2px 4px 2px 0; line-height: 1.4; }
   .tag.off { background: #fee2e2; color: #b91c1c; }
+  .ver-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; }
+  @media (min-width: 640px) { .ver-grid { grid-template-columns: repeat(3, 1fr); } }
+  .ver-grid label { display: block; font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 2px; }
+  .ver-grid div div { color: #1b1f27; }
   .actions { display: flex; gap: 10px; align-items: center; }
   .link-btn { border: none; background: none; font-weight: 700; cursor: pointer; font-size: 12px; }
   .link-btn.edit { color: #2f6690; }
@@ -131,6 +135,7 @@
             '<button class="link-btn del" onclick="eliminarPersona(\'' + p.RUT + '\',\'' + p.Nombre.replace(/'/g,"") + '\')">Eliminar</button>' +
           '</div>' +
         '</div>' +
+        panelVer(p, abierto === 'ver') +
         panelEditar(p, abierto === 'editar') +
         panelEstados(p, misEstados, abierto === 'estados') +
       '</div>';
@@ -141,6 +146,26 @@
   function togglePanel(rut, cual) {
     panelAbierto[rut] = (panelAbierto[rut] === cual) ? 'none' : cual;
     render();
+  }
+
+  function panelVer(p, abierto) {
+    if (!abierto) return '<div class="panel" id="ver-' + p.RUT + '"></div>';
+    const torreNombre = (TORRES.find(t => t.ID === p.Torre) || {}).Nombre || '(sin torre)';
+    return '<div class="panel open" id="ver-' + p.RUT + '">' +
+      '<div class="ver-grid">' +
+        '<div><label>RUT</label><div>' + p.RUT + '</div></div>' +
+        '<div><label>Cargo</label><div>' + (p.Cargo||'—') + '</div></div>' +
+        '<div><label>Departamento</label><div>' + (p.Departamento||'—') + '</div></div>' +
+        '<div><label>Torre</label><div>' + torreNombre + '</div></div>' +
+        '<div><label>Contrato</label><div>' + (p.Contrato||'—') + '</div></div>' +
+        '<div><label>Horas contrato/sem.</label><div>' + (p.HorasContractuales||40) + 'h</div></div>' +
+        '<div><label>Teléfono</label><div>' + (p.Telefono||'—') + '</div></div>' +
+        '<div><label>Fecha ingreso</label><div>' + (p.FechaIngreso||'—') + '</div></div>' +
+        '<div><label>Fecha nacimiento</label><div>' + (p.FechaNacimiento||'—') + '</div></div>' +
+        '<div><label>Estado</label><div>' + (String(p.Activo).toUpperCase()==='SI' ? 'Activo' : 'Inactivo') + '</div></div>' +
+      '</div>' +
+      '<div style="font-size:10px;color:#9aa2ab;margin-top:6px;">El sueldo base no se muestra aquí por confidencialidad — se administra directo en el Sheet.</div>' +
+    '</div>';
   }
 
   const CARGOS = ['Conserje','Primer Conserje','Portero','Nochero','Conserje part time','Auxiliar','Auxiliar de aseo','Supervisor de aseo','Aseador(a)','Volante','Supervisora','Mantención','Reciclador','Otro'];
@@ -158,7 +183,6 @@
         '<div><label>Departamento</label><select id="e-Departamento-' + p.RUT + '">' + deptoOpts + '</select></div>' +
         '<div><label>Torre</label><select id="e-Torre-' + p.RUT + '">' + torreOpts + '</select></div>' +
         '<div><label>Contrato</label><select id="e-Contrato-' + p.RUT + '"><option' + (p.Contrato==='Indefinido'?' selected':'') + '>Indefinido</option><option' + (p.Contrato==='Plazo Fijo'?' selected':'') + '>Plazo Fijo</option></select></div>' +
-        '<div><label>Sueldo base</label><input id="e-SueldoBase-' + p.RUT + '" type="number" value="' + (p.SueldoBase||0) + '"></div>' +
         '<div><label>Horas contrato/sem.</label><input id="e-HorasContractuales-' + p.RUT + '" type="number" value="' + (p.HorasContractuales||40) + '"></div>' +
         '<div><label>Teléfono</label><input id="e-Telefono-' + p.RUT + '" value="' + (p.Telefono||'') + '"></div>' +
         '<div><label>Fecha ingreso</label><input id="e-FechaIngreso-' + p.RUT + '" value="' + (p.FechaIngreso||'') + '" placeholder="DD-MM-AAAA"></div>' +
@@ -182,7 +206,7 @@
     const cambios = {
       Nombre: val('e-Nombre-' + rut), Cargo: cargoFinal, Departamento: val('e-Departamento-' + rut),
       Torre: val('e-Torre-' + rut), Contrato: val('e-Contrato-' + rut),
-      SueldoBase: Number(val('e-SueldoBase-' + rut)) || 0, HorasContractuales: Number(val('e-HorasContractuales-' + rut)) || 40,
+      HorasContractuales: Number(val('e-HorasContractuales-' + rut)) || 40,
       Telefono: val('e-Telefono-' + rut), FechaIngreso: val('e-FechaIngreso-' + rut), FechaNacimiento: val('e-FechaNacimiento-' + rut)
     };
     post({ action: 'editarPersona', rut, cambios }).then(() => cargar()).catch(err => alert('Error: ' + err.message));
