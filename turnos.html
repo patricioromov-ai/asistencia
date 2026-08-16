@@ -32,7 +32,8 @@
   .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
   .asig-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; background: #f8fafc; border-radius: 8px; padding: 6px 10px; margin-top: 6px; flex-wrap: wrap; gap: 4px; }
   .del-btn { color: #f43f5e; font-weight: 700; cursor: pointer; border: none; background: none; font-size: 13px; }
-  .status { text-align: center; font-size: 12px; color: #16a34a; margin: 8px 0; }
+  .status { text-align: center; font-size: 14px; font-weight: 700; color: #fff; background: #16a34a; margin: 10px 0; padding: 10px; border-radius: 8px; }
+  .status.error { background: #dc2626; }
   .warn-box { background: #fff7ed; border: 1px solid #fdba74; border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-size: 12px; color: #9a3412; }
   .loading, .empty { text-align: center; color: #9aa2ab; font-size: 13px; padding: 20px; }
   .rotacion-list { font-size: 12px; margin-top: 8px; }
@@ -171,6 +172,7 @@
     document.getElementById('diasWrap').innerHTML = DIAS.map(d => '<div class="dia-btn" onclick="toggleDia(\'' + d + '\')" id="dia-' + d + '">' + d + '</div>').join('');
     document.getElementById('rotDiasWrap').innerHTML = DIAS.map(d => '<div class="dia-btn" onclick="toggleRotDia(\'' + d + '\')" id="rotdia-' + d + '">' + d + '</div>').join('');
 
+    renderSecuencia();
     renderListado();
   }
 
@@ -222,7 +224,7 @@
     const fechaInicio = document.getElementById('fechaInicio').value;
     const fechaFin = document.getElementById('fechaFin').value;
     if (!rut || !torre || !turnoId || diasSeleccionados.length === 0) {
-      document.getElementById('status').textContent = 'Completa persona, torre, turno y al menos un día.';
+      mostrarStatus('status', 'Completa persona, torre, turno y al menos un día.', true);
       return;
     }
     document.getElementById('btnAgregar').disabled = true;
@@ -234,7 +236,7 @@
       .then(r => r.json())
       .then(res => {
         if (res.error) throw new Error(res.error);
-        document.getElementById('status').innerHTML = '<div class="status">✓ Asignación agregada</div>';
+        mostrarStatus('status', '✓ Asignación agregada correctamente', false);
         if (res.conflictos && res.conflictos.length) {
           document.getElementById('warnBox').innerHTML = '<div class="warn-box"><b>⚠ Cruce detectado</b> — misma torre y turno ya asignados a:<br>' +
             res.conflictos.map(c => c.nombre + ' (' + c.fechaInicio + ' → ' + c.fechaFin + ', ' + c.dias + ')').join('<br>') + '</div>';
@@ -242,8 +244,14 @@
         diasSeleccionados = [];
         cargarMeta();
       })
-      .catch(err => { document.getElementById('status').textContent = 'Error: ' + err.message; })
+      .catch(err => { mostrarStatus('status', 'Error: ' + err.message, true); })
       .finally(() => { document.getElementById('btnAgregar').disabled = false; });
+  }
+
+  function mostrarStatus(id, texto, esError) {
+    const el = document.getElementById(id);
+    el.innerHTML = '<div class="status' + (esError ? ' error' : '') + '">' + texto + '</div>';
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   function eliminar(id) {
@@ -279,7 +287,7 @@
     const fechaInicioSemana = document.getElementById('rotInicio').value;
     const semanas = parseInt(document.getElementById('rotSemanas').value, 10);
     if (!rut || !torre || rotSecuencia.length === 0 || rotDias.length === 0 || !fechaInicioSemana || !semanas) {
-      document.getElementById('rotStatus').textContent = 'Completa persona, torre, secuencia de turnos, días y fecha de inicio.';
+      mostrarStatus('rotStatus', 'Completa persona, torre, secuencia de turnos, días y fecha de inicio.', true);
       return;
     }
     fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -287,7 +295,7 @@
       .then(r => r.json())
       .then(res => {
         if (res.error) throw new Error(res.error);
-        document.getElementById('rotStatus').innerHTML = '<div class="status">✓ ' + res.creadas.length + ' semanas generadas</div>';
+        mostrarStatus('rotStatus', '✓ ' + res.creadas.length + ' semanas generadas correctamente', false);
         if (res.conflictos && res.conflictos.length) {
           document.getElementById('rotWarnBox').innerHTML = '<div class="warn-box"><b>⚠ Se detectaron cruces en ' + res.conflictos.length + ' semana(s)</b> — revisa el listado de Asignación puntual para más detalle.</div>';
         } else {
@@ -295,7 +303,7 @@
         }
         cargarMeta();
       })
-      .catch(err => { document.getElementById('rotStatus').textContent = 'Error: ' + err.message; });
+      .catch(err => { mostrarStatus('rotStatus', 'Error: ' + err.message, true); });
   }
 
   /* ===== CALENDARIO ===== */

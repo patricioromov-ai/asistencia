@@ -16,9 +16,15 @@
   .subtabs { display: flex; gap: 8px; margin-bottom: 12px; }
   .subtab-btn { padding: 7px 14px; border-radius: 8px; border: 1px solid #e6e8ec; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; color: #475569; }
   .subtab-btn.active { background: #132338; color: #fff; border-color: transparent; }
-  .nav-fecha { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px; }
-  .nav-fecha button { border: 1px solid #e6e8ec; background: #fff; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 14px; }
-  .nav-fecha input { padding: 6px; border-radius: 8px; border: 1px solid #e6e8ec; }
+  .nav-fecha { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .nav-btn { border: 1px solid #e6e8ec; background: #fff; border-radius: 10px; padding: 12px 14px; cursor: pointer; font-size: 14px; font-weight: 700; color: #1f3a5f; flex-shrink: 0; }
+  .nav-btn:active { background: #f0f4f8; }
+  .fecha-centro { flex: 1; text-align: center; }
+  .fecha-label { font-size: 15px; font-weight: 700; color: #1b1f27; line-height: 1.3; }
+  .hoy-btn { display: inline-block; margin-top: 4px; background: #1f3a5f; color: #fff; border: none; border-radius: 20px; padding: 5px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .ir-fecha { text-align: center; margin-bottom: 14px; }
+  .ir-fecha summary { font-size: 12px; color: #6b7280; cursor: pointer; text-decoration: underline; }
+  .ir-fecha input { margin-top: 6px; padding: 8px; border-radius: 8px; border: 1px solid #e6e8ec; font-size: 14px; }
   .card { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e6e8ec; margin-bottom: 16px; overflow-x: auto; }
   .torre-title { font-size: 13px; font-weight: 700; margin: 0 0 8px; }
   table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 400px; }
@@ -55,6 +61,7 @@
     <button class="subtab-btn" id="tab-mes" onclick="cambiarModo('mes')">Mes</button>
   </div>
   <div class="nav-fecha" id="navFecha"></div>
+  <details class="ir-fecha"><summary>Ir a una fecha específica</summary><div id="irFechaBox"></div></details>
   <div id="wrap2"><div class="loading">Cargando...</div></div>
 </div>
 
@@ -74,16 +81,39 @@
     cargar();
   }
 
+  const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const DIAS_LARGO = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+
+  function etiquetaFecha() {
+    const d = new Date(fechaActual + 'T00:00:00');
+    if (modo === 'dia') {
+      return DIAS_LARGO[d.getDay()].charAt(0).toUpperCase() + DIAS_LARGO[d.getDay()].slice(1) + ', ' + d.getDate() + ' de ' + MESES[d.getMonth()] + ' de ' + d.getFullYear();
+    }
+    if (modo === 'mes') {
+      return MESES[d.getMonth()].charAt(0).toUpperCase() + MESES[d.getMonth()].slice(1) + ' de ' + d.getFullYear();
+    }
+    // semana: lunes de esa semana
+    const dow = d.getDay(); const offset = dow === 0 ? -6 : 1 - dow;
+    const lunes = new Date(d); lunes.setDate(d.getDate() + offset);
+    const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
+    const mismoMes = lunes.getMonth() === domingo.getMonth();
+    if (mismoMes) return 'Semana del ' + lunes.getDate() + ' al ' + domingo.getDate() + ' de ' + MESES[domingo.getMonth()] + ' de ' + domingo.getFullYear();
+    return 'Semana del ' + lunes.getDate() + ' de ' + MESES[lunes.getMonth()] + ' al ' + domingo.getDate() + ' de ' + MESES[domingo.getMonth()] + ' de ' + domingo.getFullYear();
+  }
+
   function renderNav() {
     const el = document.getElementById('navFecha');
-    const paso = modo === 'dia' ? 1 : modo === 'semana' ? 7 : null;
+    const textoAnterior = modo === 'dia' ? '← Día anterior' : modo === 'semana' ? '← Semana anterior' : '← Mes anterior';
+    const textoSiguiente = modo === 'dia' ? 'Día siguiente →' : modo === 'semana' ? 'Semana siguiente →' : 'Mes siguiente →';
     el.innerHTML =
-      '<button onclick="mover(-1)">←</button>' +
-      (modo === 'mes'
-        ? '<input type="month" id="mesInput" value="' + fechaActual.slice(0,7) + '" onchange="fechaActual = this.value + \'-01\'; cargar();">'
-        : '<input type="date" id="fechaInput" value="' + fechaActual + '" onchange="fechaActual = this.value; cargar();">') +
-      '<button onclick="mover(1)">→</button>' +
-      '<button onclick="hoy()" style="font-size:12px;color:#1f3a5f;background:none;border:none;">Hoy</button>';
+      '<button class="nav-btn" onclick="mover(-1)">' + textoAnterior + '</button>' +
+      '<div class="fecha-centro"><div class="fecha-label">' + etiquetaFecha() + '</div><button class="hoy-btn" onclick="hoy()">Ir a Hoy</button></div>' +
+      '<button class="nav-btn" onclick="mover(1)">' + textoSiguiente + '</button>';
+
+    const box = document.getElementById('irFechaBox');
+    box.innerHTML = modo === 'mes'
+      ? '<input type="month" value="' + fechaActual.slice(0,7) + '" onchange="fechaActual = this.value + \'-01\'; renderNav(); cargar();">'
+      : '<input type="date" value="' + fechaActual + '" onchange="fechaActual = this.value; renderNav(); cargar();">';
   }
 
   function mover(dir) {
@@ -107,12 +137,8 @@
       document.getElementById('wrap2').innerHTML = '<div class="empty">No hay torres configuradas.</div>';
       return;
     }
-    let titulo = '';
-    if (data.semanaDesde) titulo = 'Semana del ' + data.semanaDesde + ' al ' + data.semanaHasta;
-    else if (data.fecha) titulo = data.diaLabel + ' ' + data.fecha;
-
     const cabeceras = data.matriz[0].filas[0].celdas.map(c => c.dia + (data.semanaDesde ? '<br><span style="font-weight:400;color:#9aa2ab;">' + c.fecha.slice(5) + '</span>' : ''));
-    let html = '<div style="text-align:center;font-size:12px;color:#6b7280;margin-bottom:10px;">' + titulo + '</div>';
+    let html = '';
     data.matriz.forEach(torre => {
       html += '<div class="card"><div class="torre-title">' + torre.torre + '</div><table><thead><tr><th></th>' +
         cabeceras.map(d => '<th>' + d + '</th>').join('') + '</tr></thead><tbody>';
