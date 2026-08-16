@@ -21,6 +21,7 @@
   td.bloque-label { text-align: left; font-weight: 700; color: #475569; }
   td.vacio { background: #fef2f2; color: #dc2626; font-weight: 700; }
   td.lleno { background: #ecfdf5; color: #047857; }
+  td.neutro { background: #f8fafc; color: #9aa2ab; }
   .loading, .empty { text-align: center; color: #9aa2ab; padding: 20px; font-size: 13px; }
 </style>
 </head>
@@ -54,13 +55,14 @@
     const cabeceras = data.matriz[0].filas[0].celdas.map(c => c.dia + '<br><span style="font-weight:400;color:#9aa2ab;">' + c.fecha.slice(5) + '</span>');
     let html = '<div style="text-align:center;font-size:12px;color:#6b7280;margin-bottom:10px;">Semana del ' + data.semanaDesde + ' al ' + data.semanaHasta + '</div>';
     data.matriz.forEach(torre => {
-      html += '<div class="card"><div class="torre-title">' + torre.torre + '</div><table><thead><tr><th></th>' +
+      html += '<div class="card"><div class="torre-title">' + torre.torre + (torre.compartida ? ' <span style="font-weight:400;color:#6b7280;font-size:11px;">(sin cobertura fija exigida)</span>' : '') + '</div><table><thead><tr><th></th>' +
         cabeceras.map(d => '<th>' + d + '</th>').join('') + '</tr></thead><tbody>';
       torre.filas.forEach(fila => {
         html += '<tr><td class="bloque-label">' + fila.bloque + '</td>';
         fila.celdas.forEach(c => {
           const vacio = c.nombres.length === 0;
-          html += '<td class="' + (vacio ? 'vacio' : 'lleno') + '">' + (vacio ? '—' : c.nombres.join(', ')) + '</td>';
+          const cls = torre.compartida ? (vacio ? 'neutro' : 'lleno') : (vacio ? 'vacio' : 'lleno');
+          html += '<td class="' + cls + '">' + (vacio ? '—' : c.nombres.join(', ')) + '</td>';
         });
         html += '</tr>';
       });
