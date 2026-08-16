@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alertas — JDVM</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; color: #1b1f27; }
+  header { background: linear-gradient(120deg, #1f3a5f, #2f6690); color: #fff; padding: 16px 18px; }
+  header h1 { font-size: 16px; margin: 0; }
+  nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
+  nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
+  nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
+  .wrap { padding: 16px; max-width: 800px; margin: 0 auto; }
+  .alerta { border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; border: 1px solid; font-size: 13px; }
+  .alta { background: #fef2f2; border-color: #fecaca; }
+  .media { background: #fffbeb; border-color: #fde68a; }
+  .baja { background: #f8fafc; border-color: #e2e8f0; }
+  .sev { font-size: 10px; font-weight: 700; text-transform: uppercase; opacity: .7; }
+  .nombre { font-weight: 700; margin-right: 6px; }
+  .loading, .empty { text-align: center; color: #9aa2ab; padding: 30px; font-size: 13px; }
+</style>
+</head>
+<body>
+<header><h1>Alertas — JDVM</h1></header>
+<nav>
+  <a href="./index.html">Asistencia</a>
+  <a href="./dashboard.html">Dashboard</a>
+  <a href="./turnos.html">Asignar</a>
+  <a href="./catalogo.html">Catálogo</a>
+  <a href="./distribucion.html">Distribución</a>
+  <a href="./personal.html">Personal</a>
+  <a href="./config.html">Torres/Deptos</a>
+  <a href="./alertas.html" class="active">Alertas</a>
+</nav>
+<div class="wrap" id="wrap"><div class="loading">Cargando...</div></div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbw7QqZ8LAUmBjmvqJrc4blBkjfe1igMu24fCyQP9epk0NRwFceQ9kdINitBHvMtD--X/exec';
+
+  fetch(API_URL + '?action=alertas')
+    .then(r => r.json())
+    .then(render)
+    .catch(err => { document.getElementById('wrap').innerHTML = '<div class="empty">Error: ' + err.message + '</div>'; });
+
+  function render(alertas) {
+    if (!alertas.length) { document.getElementById('wrap').innerHTML = '<div class="empty">✓ Sin alertas activas.</div>'; return; }
+    const orden = { alta: 0, media: 1, baja: 2 };
+    alertas.sort((a, b) => orden[a.severidad] - orden[b.severidad]);
+    document.getElementById('wrap').innerHTML = alertas.map(a =>
+      '<div class="alerta ' + a.severidad + '"><div class="sev">' + a.severidad + '</div>' +
+      '<span class="nombre">' + a.nombre + '</span>' + a.mensaje + '</div>'
+    ).join('');
+  }
+</script>
+</body>
+</html>

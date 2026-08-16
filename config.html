@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Torres y Departamentos — JDVM</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; color: #1b1f27; }
+  header { background: linear-gradient(120deg, #1f3a5f, #2f6690); color: #fff; padding: 16px 18px; }
+  header h1 { font-size: 16px; margin: 0; }
+  nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
+  nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
+  nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
+  .wrap { padding: 16px; max-width: 900px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e6e8ec; margin-bottom: 14px; }
+  .card h3 { font-size: 14px; margin: 0 0 10px; display:flex; justify-content:space-between; align-items:center; }
+  .add-btn { background: #1f3a5f; color: #fff; border: none; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  @media (min-width: 640px) { .grid { grid-template-columns: 1fr 1fr; } }
+  .item { border: 1px solid #e6e8ec; border-radius: 10px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; }
+  .item input { flex: 1; border: none; font-size: 13px; font-weight: 600; outline: none; background: transparent; }
+  .del-btn { color: #f43f5e; border: none; background: none; font-weight: 700; cursor: pointer; }
+  .loading, .empty { text-align: center; color: #9aa2ab; padding: 20px; font-size: 13px; }
+</style>
+</head>
+<body>
+<header><h1>Torres y Departamentos — JDVM</h1></header>
+<nav>
+  <a href="./index.html">Asistencia</a>
+  <a href="./dashboard.html">Dashboard</a>
+  <a href="./turnos.html">Asignar</a>
+  <a href="./catalogo.html">Catálogo</a>
+  <a href="./distribucion.html">Distribución</a>
+  <a href="./personal.html">Personal</a>
+  <a href="./config.html" class="active">Torres/Deptos</a>
+  <a href="./alertas.html">Alertas</a>
+</nav>
+<div class="wrap">
+  <div class="card">
+    <h3>Torres <button class="add-btn" onclick="agregarTorre()">+ Agregar torre</button></h3>
+    <div id="torres" class="loading">Cargando...</div>
+  </div>
+  <div class="card">
+    <h3>Departamentos <button class="add-btn" onclick="agregarDepto()">+ Agregar departamento</button></h3>
+    <div id="deptos" class="loading">Cargando...</div>
+  </div>
+</div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbw7QqZ8LAUmBjmvqJrc4blBkjfe1igMu24fCyQP9epk0NRwFceQ9kdINitBHvMtD--X/exec';
+
+  cargarTorres(); cargarDeptos();
+
+  function cargarTorres() {
+    fetch(API_URL + '?action=torres').then(r => r.json()).then(renderTorres)
+      .catch(err => { document.getElementById('torres').textContent = 'Error: ' + err.message; });
+  }
+  function cargarDeptos() {
+    fetch(API_URL + '?action=departamentos').then(r => r.json()).then(renderDeptos)
+      .catch(err => { document.getElementById('deptos').textContent = 'Error: ' + err.message; });
+  }
+
+  function renderTorres(torres) {
+    if (!torres.length) { document.getElementById('torres').innerHTML = '<div class="empty">Sin torres.</div>'; return; }
+    document.getElementById('torres').innerHTML = '<div class="grid">' + torres.map(t =>
+      '<div class="item"><input value="' + t.Nombre + '" onchange="editarTorre(\'' + t.ID + '\',this.value)">' +
+      '<button class="del-btn" onclick="eliminarTorre(\'' + t.ID + '\')">✕</button></div>'
+    ).join('') + '</div>';
+  }
+  function renderDeptos(deptos) {
+    if (!deptos.length) { document.getElementById('deptos').innerHTML = '<div class="empty">Sin departamentos.</div>'; return; }
+    document.getElementById('deptos').innerHTML = '<div class="grid">' + deptos.map(d =>
+      '<div class="item"><input value="' + d.Nombre + '" onchange="editarDepto(\'' + d.ID + '\',this.value)">' +
+      '<button class="del-btn" onclick="eliminarDepto(\'' + d.ID + '\')">✕</button></div>'
+    ).join('') + '</div>';
+  }
+
+  function post(body) {
+    return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) }).then(r => r.json());
+  }
+
+  function agregarTorre() {
+    const nombre = prompt('Nombre de la nueva torre:'); if (!nombre) return;
+    post({ action: 'agregarTorre', nombre }).then(cargarTorres).catch(err => alert('Error: ' + err.message));
+  }
+  function editarTorre(id, nombre) { post({ action: 'editarTorre', id, nombre }).then(cargarTorres).catch(err => alert('Error: ' + err.message)); }
+  function eliminarTorre(id) {
+    if (!confirm('¿Eliminar esta torre?')) return;
+    post({ action: 'eliminarTorre', id }).then(cargarTorres).catch(err => alert('Error: ' + err.message));
+  }
+
+  function agregarDepto() {
+    const nombre = prompt('Nombre del nuevo departamento:'); if (!nombre) return;
+    post({ action: 'agregarDepto', nombre }).then(cargarDeptos).catch(err => alert('Error: ' + err.message));
+  }
+  function editarDepto(id, nombre) {
+    post({ action: 'editarDepto', id, nombre }).then(cargarDeptos).catch(err => alert('Error: ' + err.message));
+  }
+  function eliminarDepto(id) {
+    if (!confirm('¿Eliminar este departamento?')) return;
+    post({ action: 'eliminarDepto', id }).then(cargarDeptos).catch(err => alert('Error: ' + err.message));
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catálogo de Turnos — JDVM</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; color: #1b1f27; }
+  header { background: linear-gradient(120deg, #1f3a5f, #2f6690); color: #fff; padding: 16px 18px; }
+  header h1 { font-size: 16px; margin: 0; }
+  nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
+  nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
+  nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
+  .wrap { padding: 16px; max-width: 900px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e6e8ec; margin-bottom: 14px; overflow-x: auto; }
+  .card h3 { font-size: 14px; margin: 0 0 10px; display:flex; justify-content:space-between; align-items:center; }
+  .add-btn { background: #1f3a5f; color: #fff; border: none; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 640px; }
+  th { text-align: left; color: #6b7280; text-transform: uppercase; font-size: 10px; padding: 6px; border-bottom: 1px solid #e6e8ec; }
+  td { padding: 4px 6px; border-bottom: 1px solid #f0f1f3; }
+  input, select { font-size: 12px; padding: 5px; border-radius: 6px; border: 1px solid #e6e8ec; width: 100%; }
+  .del-btn { color: #f43f5e; border: none; background: none; font-weight: 700; cursor: pointer; }
+  .loading, .empty { text-align: center; color: #9aa2ab; padding: 20px; font-size: 13px; }
+</style>
+</head>
+<body>
+<header><h1>Catálogo de Turnos — JDVM</h1></header>
+<nav>
+  <a href="./index.html">Asistencia</a>
+  <a href="./dashboard.html">Dashboard</a>
+  <a href="./turnos.html">Asignar</a>
+  <a href="./catalogo.html" class="active">Catálogo</a>
+  <a href="./distribucion.html">Distribución</a>
+  <a href="./personal.html">Personal</a>
+  <a href="./config.html">Torres/Deptos</a>
+  <a href="./alertas.html">Alertas</a>
+</nav>
+<div class="wrap">
+  <div class="card">
+    <h3>Turnos <button class="add-btn" onclick="agregar()">+ Agregar turno</button></h3>
+    <div id="tabla" class="loading">Cargando...</div>
+  </div>
+</div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbw7QqZ8LAUmBjmvqJrc4blBkjfe1igMu24fCyQP9epk0NRwFceQ9kdINitBHvMtD--X/exec';
+  let DEPTOS = [];
+
+  Promise.all([
+    fetch(API_URL + '?action=catalogo').then(r => r.json()),
+    fetch(API_URL + '?action=departamentos').then(r => r.json())
+  ]).then(([turnos, deptos]) => { DEPTOS = deptos; render(turnos); })
+    .catch(err => { document.getElementById('tabla').textContent = 'Error: ' + err.message; });
+
+  function render(turnos) {
+    if (!turnos.length) { document.getElementById('tabla').innerHTML = '<div class="empty">Sin turnos aún.</div>'; return; }
+    const deptoOpts = DEPTOS.map(d => '<option>' + d.Nombre + '</option>').join('');
+    let html = '<table><thead><tr><th>Nombre</th><th>Depto</th><th>Grupo</th><th>Inicio</th><th>Fin</th><th>Duración</th><th></th></tr></thead><tbody>';
+    turnos.forEach(t => {
+      html += '<tr data-id="' + t.ID + '">' +
+        '<td><input value="' + t.Nombre + '" onchange="editar(\'' + t.ID + '\',{nombre:this.value})"></td>' +
+        '<td><select onchange="editar(\'' + t.ID + '\',{depto:this.value})">' + DEPTOS.map(d => '<option' + (d.Nombre===t.Departamento?' selected':'') + '>' + d.Nombre + '</option>').join('') + '</select></td>' +
+        '<td><select onchange="editar(\'' + t.ID + '\',{grupo:this.value})">' + ['Semana','Sábado','Domingo','Feriado'].map(g => '<option' + (g===t.Grupo?' selected':'') + '>' + g + '</option>').join('') + '</select></td>' +
+        '<td><input type="time" value="' + t.HoraInicio + '" onchange="editar(\'' + t.ID + '\',{horaInicio:this.value})"></td>' +
+        '<td><input type="time" value="' + t.HoraFin + '" onchange="editar(\'' + t.ID + '\',{horaFin:this.value})"></td>' +
+        '<td>' + t.DuracionHoras + 'h</td>' +
+        '<td><button class="del-btn" onclick="eliminar(\'' + t.ID + '\')">✕</button></td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('tabla').innerHTML = html;
+  }
+
+  function recargar() {
+    fetch(API_URL + '?action=catalogo').then(r => r.json()).then(render);
+  }
+
+  function editar(id, cambios) {
+    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'editarTurno', id, cambios }) })
+      .then(r => r.json()).then(() => recargar())
+      .catch(err => alert('Error: ' + err.message));
+  }
+
+  function eliminar(id) {
+    if (!confirm('¿Eliminar este turno?')) return;
+    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'eliminarTurno', id }) })
+      .then(r => r.json()).then(() => recargar())
+      .catch(err => alert('Error: ' + err.message));
+  }
+
+  function agregar() {
+    const nombre = prompt('Nombre del turno:'); if (!nombre) return;
+    const horaInicio = prompt('Hora inicio (HH:MM):', '09:00'); if (!horaInicio) return;
+    const horaFin = prompt('Hora fin (HH:MM):', '17:00'); if (!horaFin) return;
+    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'agregarTurno', turno: { nombre, horaInicio, horaFin, grupo: 'Semana', depto: DEPTOS[0] ? DEPTOS[0].Nombre : '' } }) })
+      .then(r => r.json()).then(() => recargar())
+      .catch(err => alert('Error: ' + err.message));
+  }
+</script>
+</body>
+</html>

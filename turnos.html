@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Asignar Turnos — JDVM</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; padding: 0; color: #1b1f27; }
+    header { background: linear-gradient(120deg, #1f3a5f, #2f6690); color: #fff; padding: 16px 18px; }
+    header h1 { font-size: 16px; margin: 0; }
+    header a { color: #fff; font-size: 12px; opacity: .85; }
+    .wrap { padding: 14px; max-width: 720px; margin: 0 auto; }
+    .card { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border: 1px solid #e6e8ec; }
+    .card h3 { font-size: 14px; margin: 0 0 10px; }
+    label { font-size: 12px; color: #6b7280; display: block; margin: 10px 0 4px; }
+    select, input { width: 100%; padding: 9px; border-radius: 8px; border: 1px solid #e6e8ec; font-size: 14px; }
+    .dias { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .dia-btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #e6e8ec; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .dia-btn.active { background: #2f6690; color: #fff; border-color: transparent; }
+    .submit-btn { width: 100%; margin-top: 14px; background: #1f3a5f; color: #fff; border: none; border-radius: 10px; padding: 12px; font-weight: 700; font-size: 14px; }
+    .submit-btn:disabled { opacity: .5; }
+    .persona-block { border-bottom: 1px solid #f0f1f3; padding: 10px 0; }
+    .persona-block:last-child { border-bottom: none; }
+    .nombre { font-weight: 700; font-size: 13px; }
+    .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
+    .asig-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; background: #f8fafc; border-radius: 8px; padding: 6px 10px; margin-top: 6px; }
+    .del-btn { color: #f43f5e; font-weight: 700; cursor: pointer; border: none; background: none; font-size: 13px; }
+    .status { text-align: center; font-size: 12px; color: #16a34a; margin: 8px 0; }
+    .loading, .empty { text-align: center; color: #9aa2ab; font-size: 13px; padding: 20px; }
+    nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
+    nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
+    nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Asignar Turnos — JDVM</h1>
+  </header>
+  <nav>
+    <a href="./index.html">Asistencia</a>
+    <a href="./dashboard.html">Dashboard</a>
+    <a href="./turnos.html" class="active">Asignar</a>
+    <a href="./catalogo.html">Catálogo</a>
+    <a href="./distribucion.html">Distribución</a>
+    <a href="./personal.html">Personal</a>
+    <a href="./config.html">Torres/Deptos</a>
+    <a href="./alertas.html">Alertas</a>
+  </nav>
+  <div class="wrap">
+    <div class="card">
+      <h3>Nueva asignación</h3>
+      <label>Persona</label>
+      <select id="selPersona"></select>
+      <label>Torre</label>
+      <select id="selTorre"></select>
+      <label>Turno</label>
+      <select id="selTurno"></select>
+      <label>Días</label>
+      <div class="dias" id="diasWrap"></div>
+      <button class="submit-btn" id="btnAgregar" onclick="agregar()">Agregar asignación</button>
+      <div id="status"></div>
+    </div>
+
+    <div class="card">
+      <h3>Asignaciones actuales</h3>
+      <div id="listado" class="loading">Cargando...</div>
+    </div>
+  </div>
+
+<script>
+  // Pega acá la misma URL de Apps Script que usaste en index.html
+  const API_URL = 'https://script.google.com/macros/s/AKfycbw7QqZ8LAUmBjmvqJrc4blBkjfe1igMu24fCyQP9epk0NRwFceQ9kdINitBHvMtD--X/exec';
+
+  const DIAS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  let META = { personal: [], turnos: [], torres: [], asignaciones: [] };
+  let diasSeleccionados = [];
+
+  cargarMeta();
+
+  function cargarMeta() {
+    fetch(API_URL + '?action=meta')
+      .then(r => r.json())
+      .then(data => { META = data; render(); })
+      .catch(err => { document.getElementById('listado').textContent = 'Error al cargar: ' + err.message; });
+  }
+
+  function render() {
+    // Selects
+    document.getElementById('selPersona').innerHTML = META.personal
+      .map(p => '<option value="' + p.rut + '">' + p.nombre + ' (' + p.depto + ')</option>').join('');
+    document.getElementById('selTorre').innerHTML = META.torres
+      .map(t => '<option value="' + t.ID + '">' + t.Nombre + '</option>').join('');
+    document.getElementById('selTurno').innerHTML = META.turnos
+      .map(t => '<option value="' + t.ID + '">' + t.Nombre + ' (' + t.HoraInicio + '-' + t.HoraFin + ', ' + t.DuracionHoras + 'h)</option>').join('');
+    document.getElementById('diasWrap').innerHTML = DIAS
+      .map(d => '<div class="dia-btn" onclick="toggleDia(\'' + d + '\')" id="dia-' + d + '">' + d + '</div>').join('');
+
+    // Listado de asignaciones agrupado por persona
+    const porRut = {};
+    META.asignaciones.forEach(a => { (porRut[a.RUT] = porRut[a.RUT] || []).push(a); });
+    const turnosById = {}; META.turnos.forEach(t => turnosById[t.ID] = t);
+    const torresById = {}; META.torres.forEach(t => torresById[t.ID] = t);
+    const personalByRut = {}; META.personal.forEach(p => personalByRut[p.rut] = p);
+
+    const ruts = Object.keys(porRut);
+    if (ruts.length === 0) {
+      document.getElementById('listado').innerHTML = '<div class="empty">Todavía no hay asignaciones cargadas.</div>';
+      return;
+    }
+    let html = '';
+    ruts.forEach(rut => {
+      const p = personalByRut[rut];
+      html += '<div class="persona-block"><div class="nombre">' + (p ? p.nombre : rut) + '</div>';
+      porRut[rut].forEach(a => {
+        const t = turnosById[a.TurnoID] || {};
+        const tr = torresById[a.Torre] || {};
+        html += '<div class="asig-row"><span>' + (t.Nombre||a.TurnoID) + ' · ' + (tr.Nombre||a.Torre) + ' · ' + a['Dias (separados por coma)'] + '</span>' +
+          '<button class="del-btn" onclick="eliminar(\'' + a.ID + '\')">Quitar</button></div>';
+      });
+      html += '</div>';
+    });
+    document.getElementById('listado').innerHTML = html;
+  }
+
+  function toggleDia(d) {
+    const el = document.getElementById('dia-' + d);
+    if (diasSeleccionados.includes(d)) {
+      diasSeleccionados = diasSeleccionados.filter(x => x !== d);
+      el.classList.remove('active');
+    } else {
+      diasSeleccionados.push(d);
+      el.classList.add('active');
+    }
+  }
+
+  function agregar() {
+    const rut = document.getElementById('selPersona').value;
+    const torre = document.getElementById('selTorre').value;
+    const turnoId = document.getElementById('selTurno').value;
+    if (!rut || !torre || !turnoId || diasSeleccionados.length === 0) {
+      document.getElementById('status').textContent = 'Completa persona, torre, turno y al menos un día.';
+      return;
+    }
+    document.getElementById('btnAgregar').disabled = true;
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'asignar', asignacion: { rut, torre, turnoId, dias: diasSeleccionados } })
+    })
+      .then(r => r.json())
+      .then(res => {
+        if (res.error) throw new Error(res.error);
+        document.getElementById('status').innerHTML = '<div class="status">✓ Asignación agregada</div>';
+        diasSeleccionados = [];
+        cargarMeta();
+      })
+      .catch(err => { document.getElementById('status').textContent = 'Error: ' + err.message; })
+      .finally(() => { document.getElementById('btnAgregar').disabled = false; });
+  }
+
+  function eliminar(id) {
+    if (!confirm('¿Quitar esta asignación?')) return;
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'eliminarAsignacion', id: id })
+    })
+      .then(r => r.json())
+      .then(() => cargarMeta())
+      .catch(err => alert('Error: ' + err.message));
+  }
+</script>
+</body>
+</html>

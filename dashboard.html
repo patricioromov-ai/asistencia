@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard — JDVM</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; color: #1b1f27; }
+  header { background: linear-gradient(120deg, #1f3a5f, #2f6690); color: #fff; padding: 16px 18px; }
+  header h1 { font-size: 16px; margin: 0; }
+  nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
+  nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
+  nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
+  .wrap { padding: 16px; max-width: 900px; margin: 0 auto; }
+  .kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+  @media (min-width: 640px) { .kpis { grid-template-columns: repeat(4, 1fr); } }
+  .kpi { background: #fff; border-radius: 12px; padding: 14px; border: 1px solid #e6e8ec; }
+  .kpi .label { font-size: 11px; color: #6b7280; text-transform: uppercase; margin-bottom: 4px; }
+  .kpi .value { font-size: 22px; font-weight: 800; }
+  .card { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e6e8ec; margin-bottom: 14px; }
+  .card h3 { font-size: 14px; margin: 0 0 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; color: #6b7280; text-transform: uppercase; font-size: 10px; padding: 6px; border-bottom: 1px solid #e6e8ec; }
+  td { padding: 6px; border-bottom: 1px solid #f0f1f3; }
+  .estado { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  .estado.sobre { background: #fee2e2; color: #b91c1c; }
+  .estado.bajo { background: #fef3c7; color: #92400e; }
+  .estado.linea { background: #d1fae5; color: #065f46; }
+  .loading, .empty { text-align: center; color: #9aa2ab; padding: 20px; font-size: 13px; }
+</style>
+</head>
+<body>
+<header><h1>Dashboard — JDVM</h1></header>
+<nav>
+  <a href="./index.html">Asistencia</a>
+  <a href="./dashboard.html" class="active">Dashboard</a>
+  <a href="./turnos.html">Asignar</a>
+  <a href="./catalogo.html">Catálogo</a>
+  <a href="./distribucion.html">Distribución</a>
+  <a href="./personal.html">Personal</a>
+  <a href="./config.html">Torres/Deptos</a>
+  <a href="./alertas.html">Alertas</a>
+</nav>
+<div class="wrap" id="wrap">
+  <div class="loading">Cargando...</div>
+</div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbw7QqZ8LAUmBjmvqJrc4blBkjfe1igMu24fCyQP9epk0NRwFceQ9kdINitBHvMtD--X/exec';
+
+  fetch(API_URL + '?action=dashboard')
+    .then(r => r.json())
+    .then(render)
+    .catch(err => { document.getElementById('wrap').innerHTML = '<div class="empty">Error: ' + err.message + '</div>'; });
+
+  function render(d) {
+    const deptoTxt = Object.entries(d.porDepto || {}).map(([k,v]) => v + ' ' + k).join(' · ');
+    let html = '';
+    html += '<div class="kpis">';
+    html += kpi('Dotación activa', d.dotacionActiva, deptoTxt);
+    html += kpi('Ausencias del mes', d.ausenciasMes, '');
+    html += kpi('Exceden 40h/semana', d.excedidos40h, '');
+    html += kpi('Vacaciones/Licencia hoy', d.enLicenciaHoy, '');
+    html += '</div>';
+
+    html += '<div class="card"><h3>Horas por trabajador</h3>';
+    if (!d.horasPorTrabajador || d.horasPorTrabajador.length === 0) {
+      html += '<div class="empty">Sin datos aún.</div>';
+    } else {
+      html += '<table><thead><tr><th>Trabajador</th><th>Programadas</th><th>Trabajadas (mes)</th><th>Contrato</th><th>Estado</th></tr></thead><tbody>';
+      d.horasPorTrabajador.forEach(r => {
+        const diff = +(r.programadas - r.contrato).toFixed(1);
+        const cls = diff > 0 ? 'sobre' : diff < 0 ? 'bajo' : 'linea';
+        const label = diff > 0 ? 'Sobre contrato' : diff < 0 ? 'Bajo contrato' : 'En línea';
+        html += '<tr><td>' + r.nombre + '</td><td>' + r.programadas + 'h</td><td>' + r.trabajadas + 'h</td><td>' + r.contrato + 'h</td>' +
+          '<td><span class="estado ' + cls + '">' + label + ' (' + (diff>0?'+':'') + diff + 'h)</span></td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+    document.getElementById('wrap').innerHTML = html;
+  }
+
+  function kpi(label, value, sub) {
+    return '<div class="kpi"><div class="label">' + label + '</div><div class="value">' + value + '</div>' +
+      (sub ? '<div style="font-size:11px;color:#6b7280;margin-top:4px;">' + sub + '</div>' : '') + '</div>';
+  }
+</script>
+</body>
+</html>

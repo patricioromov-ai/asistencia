@@ -28,6 +28,9 @@
     .empty { text-align: center; color: #9aa2ab; font-size: 13px; padding: 30px 10px; }
     .status { text-align: center; font-size: 12px; color: #16a34a; margin-bottom: 6px; }
     .loading { text-align: center; padding: 40px; color: #9aa2ab; font-size: 13px; }
+    nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
+    nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
+    nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
   </style>
 </head>
 <body>
@@ -35,6 +38,16 @@
     <h1>Asistencia — JDVM</h1>
     <p id="fechaLabel">Cargando fecha...</p>
   </header>
+  <nav>
+    <a href="./index.html" class="active">Asistencia</a>
+    <a href="./dashboard.html">Dashboard</a>
+    <a href="./turnos.html">Asignar</a>
+    <a href="./catalogo.html">Catálogo</a>
+    <a href="./distribucion.html">Distribución</a>
+    <a href="./personal.html">Personal</a>
+    <a href="./config.html">Torres/Deptos</a>
+    <a href="./alertas.html">Alertas</a>
+  </nav>
   <div class="wrap" id="wrap">
     <div class="loading">Cargando trabajadores del día...</div>
   </div>

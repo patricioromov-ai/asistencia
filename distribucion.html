@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Distribución — JDVM</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; color: #1b1f27; }
+  header { background: linear-gradient(120deg, #1f3a5f, #2f6690); color: #fff; padding: 16px 18px; }
+  header h1 { font-size: 16px; margin: 0; }
+  nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
+  nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
+  nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
+  .wrap { padding: 16px; max-width: 900px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e6e8ec; margin-bottom: 16px; overflow-x: auto; }
+  .torre-title { font-size: 13px; font-weight: 700; margin: 0 0 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 560px; }
+  th { text-align: center; color: #6b7280; font-size: 10px; padding: 4px; }
+  td { padding: 4px; text-align: center; border: 1px solid #f0f1f3; }
+  td.bloque-label { text-align: left; font-weight: 700; color: #475569; }
+  td.vacio { background: #fef2f2; color: #dc2626; font-weight: 700; }
+  td.lleno { background: #ecfdf5; color: #047857; }
+  .loading, .empty { text-align: center; color: #9aa2ab; padding: 20px; font-size: 13px; }
+</style>
+</head>
+<body>
+<header><h1>Distribución (cobertura) — JDVM</h1></header>
+<nav>
+  <a href="./index.html">Asistencia</a>
+  <a href="./dashboard.html">Dashboard</a>
+  <a href="./turnos.html">Asignar</a>
+  <a href="./catalogo.html">Catálogo</a>
+  <a href="./distribucion.html" class="active">Distribución</a>
+  <a href="./personal.html">Personal</a>
+  <a href="./config.html">Torres/Deptos</a>
+  <a href="./alertas.html">Alertas</a>
+</nav>
+<div class="wrap" id="wrap"><div class="loading">Cargando...</div></div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbw7QqZ8LAUmBjmvqJrc4blBkjfe1igMu24fCyQP9epk0NRwFceQ9kdINitBHvMtD--X/exec';
+
+  fetch(API_URL + '?action=distribucion')
+    .then(r => r.json())
+    .then(render)
+    .catch(err => { document.getElementById('wrap').innerHTML = '<div class="empty">Error: ' + err.message + '</div>'; });
+
+  function render(data) {
+    if (!data.matriz || data.matriz.length === 0) {
+      document.getElementById('wrap').innerHTML = '<div class="empty">No hay torres configuradas.</div>';
+      return;
+    }
+    let html = '';
+    data.matriz.forEach(torre => {
+      html += '<div class="card"><div class="torre-title">' + torre.torre + '</div><table><thead><tr><th></th>' +
+        data.dias.map(d => '<th>' + d + '</th>').join('') + '</tr></thead><tbody>';
+      torre.filas.forEach(fila => {
+        html += '<tr><td class="bloque-label">' + fila.bloque + '</td>';
+        fila.celdas.forEach(c => {
+          const vacio = c.nombres.length === 0;
+          html += '<td class="' + (vacio ? 'vacio' : 'lleno') + '">' + (vacio ? '—' : c.nombres.join(', ')) + '</td>';
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table></div>';
+    });
+    document.getElementById('wrap').innerHTML = html;
+  }
+</script>
+</body>
+</html>

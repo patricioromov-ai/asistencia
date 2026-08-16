@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personal — JDVM</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; color: #1b1f27; }
+  header { background: linear-gradient(120deg, #1f3a5f, #2f6690); color: #fff; padding: 16px 18px; }
+  header h1 { font-size: 16px; margin: 0; }
+  nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
+  nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
+  nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
+  .wrap { padding: 16px; max-width: 900px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e6e8ec; margin-bottom: 14px; }
+  .card h3 { font-size: 14px; margin: 0 0 10px; display:flex; justify-content:space-between; align-items:center; }
+  .add-btn, .save-btn { background: #1f3a5f; color: #fff; border: none; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  input, select { font-size: 12px; padding: 7px; border-radius: 6px; border: 1px solid #e6e8ec; width: 100%; }
+  .persona { border-bottom: 1px solid #f0f1f3; padding: 10px 0; }
+  .persona:last-child { border-bottom: none; }
+  .p-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; cursor: pointer; }
+  .nombre { font-weight: 700; font-size: 13px; }
+  .meta { font-size: 11px; color: #6b7280; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
+  .actions { display: flex; gap: 8px; }
+  .del-btn { color: #f43f5e; border: none; background: none; font-weight: 700; cursor: pointer; font-size: 12px; }
+  .estados-box { display: none; margin-top: 10px; padding: 10px; background: #f8fafc; border-radius: 8px; }
+  .estado-row { display: flex; justify-content: space-between; font-size: 11px; background: #fff; padding: 5px 8px; border-radius: 6px; margin-top: 4px; }
+  .loading, .empty { text-align: center; color: #9aa2ab; padding: 20px; font-size: 13px; }
+</style>
+</head>
+<body>
+<header><h1>Personal — JDVM</h1></header>
+<nav>
+  <a href="./index.html">Asistencia</a>
+  <a href="./dashboard.html">Dashboard</a>
+  <a href="./turnos.html">Asignar</a>
+  <a href="./catalogo.html">Catálogo</a>
+  <a href="./distribucion.html">Distribución</a>
+  <a href="./personal.html" class="active">Personal</a>
+  <a href="./config.html">Torres/Deptos</a>
+  <a href="./alertas.html">Alertas</a>
+</nav>
+<div class="wrap">
+  <div class="card">
+    <h3>Nuevo trabajador <button class="add-btn" onclick="toggleForm()">+ Agregar</button></h3>
+    <div id="form" style="display:none;">
+      <div class="form-grid">
+        <input id="fNombre" placeholder="Nombre completo">
+        <input id="fRut" placeholder="RUT">
+        <input id="fCargo" placeholder="Cargo">
+        <select id="fDepto"></select>
+        <input id="fSueldo" type="number" placeholder="Sueldo base">
+        <input id="fHoras" type="number" placeholder="Horas contrato/sem." value="40">
+      </div>
+      <button class="save-btn" onclick="agregarPersona()">Guardar</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Trabajadores</h3>
+    <div id="listado" class="loading">Cargando...</div>
+  </div>
+</div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbw7QqZ8LAUmBjmvqJrc4blBkjfe1igMu24fCyQP9epk0NRwFceQ9kdINitBHvMtD--X/exec';
+  let PERSONAL = [], ESTADOS = [], DEPTOS = [];
+
+  cargar();
+  function cargar() {
+    Promise.all([
+      fetch(API_URL + '?action=personalFull').then(r => r.json()),
+      fetch(API_URL + '?action=estados').then(r => r.json()),
+      fetch(API_URL + '?action=departamentos').then(r => r.json())
+    ]).then(([p, e, d]) => { PERSONAL = p; ESTADOS = e; DEPTOS = d; render(); })
+      .catch(err => { document.getElementById('listado').textContent = 'Error: ' + err.message; });
+  }
+
+  function toggleForm() {
+    const f = document.getElementById('form');
+    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    document.getElementById('fDepto').innerHTML = DEPTOS.map(d => '<option>' + d.Nombre + '</option>').join('');
+  }
+
+  function render() {
+    const activos = PERSONAL.filter(p => String(p.Activo).toUpperCase() === 'SI');
+    if (!activos.length) { document.getElementById('listado').innerHTML = '<div class="empty">Sin trabajadores activos.</div>'; return; }
+    let html = '';
+    activos.forEach(p => {
+      const misEstados = ESTADOS.filter(e => String(e.RUT).trim() === String(p.RUT).trim());
+      html += '<div class="persona">' +
+        '<div class="p-head" onclick="toggleEstados(\'' + p.RUT + '\')">' +
+          '<div><div class="nombre">' + p.Nombre + '</div><div class="meta">' + p.RUT + ' · ' + p.Cargo + '</div>' +
+          '<span class="tag">' + p.Departamento + '</span><span class="tag">' + (p.HorasContractuales||40) + 'h/sem contrato</span></div>' +
+          '<div class="actions"><button class="del-btn" onclick="event.stopPropagation();eliminarPersona(\'' + p.RUT + '\',\'' + p.Nombre.replace(/'/g,"") + '\')">Eliminar</button></div>' +
+        '</div>' +
+        '<div class="estados-box" id="estados-' + p.RUT + '">' +
+          '<div style="font-size:11px;font-weight:700;margin-bottom:6px;">Vacaciones / Licencia médica</div>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">' +
+            '<select id="tipo-' + p.RUT + '"><option>Vacaciones</option><option>Licencia Médica</option></select>' +
+            '<input type="date" id="ini-' + p.RUT + '">' +
+            '<input type="date" id="fin-' + p.RUT + '">' +
+            '<button class="save-btn" onclick="agregarEstado(\'' + p.RUT + '\')">Agregar</button>' +
+          '</div>' +
+          (misEstados.map(e => '<div class="estado-row"><span>' + e.Tipo + ' · ' + e.FechaInicio + ' → ' + e.FechaTermino + '</span>' +
+            '<button class="del-btn" onclick="eliminarEstado(\'' + e.ID + '\')">Quitar</button></div>').join('') || '<div style="font-size:11px;color:#9aa2ab;">Sin registros.</div>') +
+        '</div>' +
+      '</div>';
+    });
+    document.getElementById('listado').innerHTML = html;
+  }
+
+  function toggleEstados(rut) {
+    const box = document.getElementById('estados-' + rut);
+    box.style.display = box.style.display === 'block' ? 'none' : 'block';
+  }
+
+  function agregarPersona() {
+    const nombre = document.getElementById('fNombre').value;
+    const rut = document.getElementById('fRut').value;
+    if (!nombre || !rut) { alert('Nombre y RUT son obligatorios.'); return; }
+    const persona = {
+      nombre, rut, cargo: document.getElementById('fCargo').value,
+      depto: document.getElementById('fDepto').value,
+      sueldoBase: document.getElementById('fSueldo').value,
+      horasContractuales: document.getElementById('fHoras').value
+    };
+    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'agregarPersona', persona }) })
+      .then(r => r.json()).then(() => { toggleForm(); cargar(); })
+      .catch(err => alert('Error: ' + err.message));
+  }
+
+  function eliminarPersona(rut, nombre) {
+    if (!confirm('¿Eliminar definitivamente a ' + nombre + '? Esto también borra sus asignaciones de turno.')) return;
+    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'eliminarPersona', rut }) })
+      .then(r => r.json()).then(() => cargar())
+      .catch(err => alert('Error: ' + err.message));
+  }
+
+  function agregarEstado(rut) {
+    const tipo = document.getElementById('tipo-' + rut).value;
+    const fechaInicio = document.getElementById('ini-' + rut).value;
+    const fechaTermino = document.getElementById('fin-' + rut).value;
+    if (!fechaInicio || !fechaTermino) { alert('Completa ambas fechas.'); return; }
+    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'agregarEstado', estado: { rut, tipo, fechaInicio, fechaTermino } }) })
+      .then(r => r.json()).then(() => cargar())
+      .catch(err => alert('Error: ' + err.message));
+  }
+
+  function eliminarEstado(id) {
+    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'eliminarEstado', id }) })
+      .then(r => r.json()).then(() => cargar())
+      .catch(err => alert('Error: ' + err.message));
+  }
+</script>
+</body>
+</html>
