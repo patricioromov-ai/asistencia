@@ -1,42 +1,52 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Asignar Turnos — JDVM</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; padding: 0; color: #1b1f27; }
-    header { background: linear-gradient(120deg, #1f3a5f, #2f6690); color: #fff; padding: 16px 18px; }
-    header h1 { font-size: 16px; margin: 0; }
-    header a { color: #fff; font-size: 12px; opacity: .85; }
-    .wrap { padding: 14px; max-width: 720px; margin: 0 auto; }
-    .card { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border: 1px solid #e6e8ec; }
-    .card h3 { font-size: 14px; margin: 0 0 10px; }
-    label { font-size: 12px; color: #6b7280; display: block; margin: 10px 0 4px; }
-    select, input { width: 100%; padding: 9px; border-radius: 8px; border: 1px solid #e6e8ec; font-size: 14px; }
-    .dias { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-    .dia-btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #e6e8ec; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
-    .dia-btn.active { background: #2f6690; color: #fff; border-color: transparent; }
-    .submit-btn { width: 100%; margin-top: 14px; background: #1f3a5f; color: #fff; border: none; border-radius: 10px; padding: 12px; font-weight: 700; font-size: 14px; }
-    .submit-btn:disabled { opacity: .5; }
-    .persona-block { border-bottom: 1px solid #f0f1f3; padding: 10px 0; }
-    .persona-block:last-child { border-bottom: none; }
-    .nombre { font-weight: 700; font-size: 13px; }
-    .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
-    .asig-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; background: #f8fafc; border-radius: 8px; padding: 6px 10px; margin-top: 6px; }
-    .del-btn { color: #f43f5e; font-weight: 700; cursor: pointer; border: none; background: none; font-size: 13px; }
-    .status { text-align: center; font-size: 12px; color: #16a34a; margin: 8px 0; }
-    .loading, .empty { text-align: center; color: #9aa2ab; font-size: 13px; padding: 20px; }
-    nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
-    nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
-    nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asignar Turnos — JDVM</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; color: #1b1f27; }
+  header { background: linear-gradient(120deg, #1f3a5f, #2f6690); color: #fff; padding: 16px 18px; }
+  header h1 { font-size: 16px; margin: 0; }
+  nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
+  nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
+  nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
+  .wrap { padding: 14px; max-width: 820px; margin: 0 auto; }
+  .subtabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .subtab-btn { padding: 7px 14px; border-radius: 8px; border: 1px solid #e6e8ec; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; color: #475569; }
+  .subtab-btn.active { background: #132338; color: #fff; border-color: transparent; }
+  .card { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border: 1px solid #e6e8ec; }
+  .card h3 { font-size: 14px; margin: 0 0 10px; }
+  label { font-size: 12px; color: #6b7280; display: block; margin: 10px 0 4px; }
+  select, input { width: 100%; padding: 9px; border-radius: 8px; border: 1px solid #e6e8ec; font-size: 14px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dias { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .dia-btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #e6e8ec; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .dia-btn.active { background: #2f6690; color: #fff; border-color: transparent; }
+  .submit-btn { width: 100%; margin-top: 14px; background: #1f3a5f; color: #fff; border: none; border-radius: 10px; padding: 12px; font-weight: 700; font-size: 14px; }
+  .submit-btn:disabled { opacity: .5; }
+  .persona-block { border-bottom: 1px solid #f0f1f3; padding: 10px 0; }
+  .persona-block:last-child { border-bottom: none; }
+  .nombre { font-weight: 700; font-size: 13px; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
+  .asig-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; background: #f8fafc; border-radius: 8px; padding: 6px 10px; margin-top: 6px; flex-wrap: wrap; gap: 4px; }
+  .del-btn { color: #f43f5e; font-weight: 700; cursor: pointer; border: none; background: none; font-size: 13px; }
+  .status { text-align: center; font-size: 12px; color: #16a34a; margin: 8px 0; }
+  .warn-box { background: #fff7ed; border: 1px solid #fdba74; border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-size: 12px; color: #9a3412; }
+  .loading, .empty { text-align: center; color: #9aa2ab; font-size: 13px; padding: 20px; }
+  .rotacion-list { font-size: 12px; margin-top: 8px; }
+  .rotacion-list div { padding: 4px 0; border-bottom: 1px solid #f0f1f3; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
+  .cal-day { border: 1px solid #e6e8ec; border-radius: 8px; padding: 6px 4px; min-height: 54px; font-size: 10px; text-align: center; }
+  .cal-day .num { font-weight: 700; font-size: 11px; }
+  .cal-day .turno { font-size: 9px; color: #1f3a5f; font-weight: 700; margin-top: 2px; }
+  .cal-day.vacio { color: #cbd5e1; }
+  .cal-day.licencia { background: #e0f2fe; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Asignar Turnos — JDVM</h1>
-  </header>
+  <header><h1>Asignar Turnos — JDVM</h1></header>
   <nav>
     <a href="./index.html">Asistencia</a>
     <a href="./dashboard.html">Dashboard</a>
@@ -48,35 +58,94 @@
     <a href="./alertas.html">Alertas</a>
   </nav>
   <div class="wrap">
-    <div class="card">
-      <h3>Nueva asignación</h3>
-      <label>Persona</label>
-      <select id="selPersona"></select>
-      <label>Torre</label>
-      <select id="selTorre"></select>
-      <label>Turno</label>
-      <select id="selTurno"></select>
-      <label>Días</label>
-      <div class="dias" id="diasWrap"></div>
-      <button class="submit-btn" id="btnAgregar" onclick="agregar()">Agregar asignación</button>
-      <div id="status"></div>
+
+    <div class="subtabs">
+      <button class="subtab-btn active" id="tab-simple" onclick="cambiarTab('simple')">Asignación puntual</button>
+      <button class="subtab-btn" id="tab-rotacion" onclick="cambiarTab('rotacion')">Generar rotación (varias semanas)</button>
+      <button class="subtab-btn" id="tab-calendario" onclick="cambiarTab('calendario')">Ver calendario</button>
     </div>
 
-    <div class="card">
-      <h3>Asignaciones actuales</h3>
-      <div id="listado" class="loading">Cargando...</div>
+    <!-- ===== ASIGNACIÓN PUNTUAL ===== -->
+    <div id="panel-simple">
+      <div class="card">
+        <h3>Nueva asignación</h3>
+        <label>Persona</label>
+        <select id="selPersona"></select>
+        <div class="row2">
+          <div><label>Torre</label><select id="selTorre"></select></div>
+          <div><label>Turno</label><select id="selTurno"></select></div>
+        </div>
+        <div class="row2">
+          <div><label>Desde (fecha)</label><input type="date" id="fechaInicio"></div>
+          <div><label>Hasta (fecha)</label><input type="date" id="fechaFin"></div>
+        </div>
+        <label>Días de la semana en ese rango</label>
+        <div class="dias" id="diasWrap"></div>
+        <button class="submit-btn" id="btnAgregar" onclick="agregar()">Agregar asignación</button>
+        <div id="status"></div>
+        <div id="warnBox"></div>
+      </div>
+
+      <div class="card">
+        <h3>Asignaciones actuales</h3>
+        <div id="listado" class="loading">Cargando...</div>
+      </div>
     </div>
+
+    <!-- ===== ROTACIÓN ===== -->
+    <div id="panel-rotacion" style="display:none;">
+      <div class="card">
+        <h3>Generar rotación semanal</h3>
+        <p style="font-size:12px;color:#6b7280;margin-top:-4px;">Ej: esta semana AM, la próxima PM, la siguiente Noche... se repite en ese orden.</p>
+        <label>Persona</label>
+        <select id="rotPersona"></select>
+        <label>Torre</label>
+        <select id="rotTorre"></select>
+        <label>Turnos a rotar (en orden — clic para agregar a la secuencia)</label>
+        <select id="rotTurnoSelect"></select>
+        <div id="rotSecuencia" style="margin-top:6px;font-size:12px;"></div>
+        <label>Días de la semana que trabaja</label>
+        <div class="dias" id="rotDiasWrap"></div>
+        <div class="row2">
+          <div><label>Semana 1 comienza el (lunes)</label><input type="date" id="rotInicio"></div>
+          <div><label>Cantidad de semanas</label><input type="number" id="rotSemanas" value="4" min="1" max="52"></div>
+        </div>
+        <button class="submit-btn" onclick="generarRotacion()">Generar rotación</button>
+        <div id="rotStatus"></div>
+        <div id="rotWarnBox"></div>
+      </div>
+    </div>
+
+    <!-- ===== CALENDARIO ===== -->
+    <div id="panel-calendario" style="display:none;">
+      <div class="card">
+        <h3>Calendario por persona</h3>
+        <div class="row2">
+          <div><label>Persona</label><select id="calPersona" onchange="cargarCalendario()"></select></div>
+          <div><label>Mes</label><input type="month" id="calMes" onchange="cargarCalendario()"></div>
+        </div>
+        <div id="calGrid" class="loading">Elige una persona.</div>
+      </div>
+    </div>
+
   </div>
 
 <script>
-  // Pega acá la misma URL de Apps Script que usaste en index.html
   const API_URL = 'https://script.google.com/macros/s/AKfycbw7QqZ8LAUmBjmvqJrc4blBkjfe1igMu24fCyQP9epk0NRwFceQ9kdINitBHvMtD--X/exec';
-
   const DIAS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
   let META = { personal: [], turnos: [], torres: [], asignaciones: [] };
   let diasSeleccionados = [];
+  let rotDias = [];
+  let rotSecuencia = [];
 
   cargarMeta();
+
+  function cambiarTab(tab) {
+    ['simple','rotacion','calendario'].forEach(t => {
+      document.getElementById('panel-' + t).style.display = (t === tab) ? 'block' : 'none';
+      document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    });
+  }
 
   function cargarMeta() {
     fetch(API_URL + '?action=meta')
@@ -86,17 +155,26 @@
   }
 
   function render() {
-    // Selects
-    document.getElementById('selPersona').innerHTML = META.personal
-      .map(p => '<option value="' + p.rut + '">' + p.nombre + ' (' + p.depto + ')</option>').join('');
-    document.getElementById('selTorre').innerHTML = META.torres
-      .map(t => '<option value="' + t.ID + '">' + t.Nombre + '</option>').join('');
-    document.getElementById('selTurno').innerHTML = META.turnos
-      .map(t => '<option value="' + t.ID + '">' + t.Nombre + ' (' + t.HoraInicio + '-' + t.HoraFin + ', ' + t.DuracionHoras + 'h)</option>').join('');
-    document.getElementById('diasWrap').innerHTML = DIAS
-      .map(d => '<div class="dia-btn" onclick="toggleDia(\'' + d + '\')" id="dia-' + d + '">' + d + '</div>').join('');
+    const personaOpts = META.personal.map(p => '<option value="' + p.rut + '">' + p.nombre + ' (' + p.depto + ')</option>').join('');
+    document.getElementById('selPersona').innerHTML = personaOpts;
+    document.getElementById('rotPersona').innerHTML = personaOpts;
+    document.getElementById('calPersona').innerHTML = '<option value="">Elegir...</option>' + personaOpts;
 
-    // Listado de asignaciones agrupado por persona
+    const torreOpts = META.torres.map(t => '<option value="' + t.ID + '">' + t.Nombre + '</option>').join('');
+    document.getElementById('selTorre').innerHTML = torreOpts;
+    document.getElementById('rotTorre').innerHTML = torreOpts;
+
+    const turnoOpts = META.turnos.map(t => '<option value="' + t.ID + '">' + t.Nombre + ' (' + t.HoraInicio + '-' + t.HoraFin + ', ' + t.DuracionHoras + 'h)</option>').join('');
+    document.getElementById('selTurno').innerHTML = turnoOpts;
+    document.getElementById('rotTurnoSelect').innerHTML = turnoOpts;
+
+    document.getElementById('diasWrap').innerHTML = DIAS.map(d => '<div class="dia-btn" onclick="toggleDia(\'' + d + '\')" id="dia-' + d + '">' + d + '</div>').join('');
+    document.getElementById('rotDiasWrap').innerHTML = DIAS.map(d => '<div class="dia-btn" onclick="toggleRotDia(\'' + d + '\')" id="rotdia-' + d + '">' + d + '</div>').join('');
+
+    renderListado();
+  }
+
+  function renderListado() {
     const porRut = {};
     META.asignaciones.forEach(a => { (porRut[a.RUT] = porRut[a.RUT] || []).push(a); });
     const turnosById = {}; META.turnos.forEach(t => turnosById[t.ID] = t);
@@ -112,12 +190,15 @@
     ruts.forEach(rut => {
       const p = personalByRut[rut];
       html += '<div class="persona-block"><div class="nombre">' + (p ? p.nombre : rut) + '</div>';
-      porRut[rut].forEach(a => {
-        const t = turnosById[a.TurnoID] || {};
-        const tr = torresById[a.Torre] || {};
-        html += '<div class="asig-row"><span>' + (t.Nombre||a.TurnoID) + ' · ' + (tr.Nombre||a.Torre) + ' · ' + a['Dias (separados por coma)'] + '</span>' +
-          '<button class="del-btn" onclick="eliminar(\'' + a.ID + '\')">Quitar</button></div>';
-      });
+      porRut[rut]
+        .sort((a,b) => (a.FechaInicio||'').localeCompare(b.FechaInicio||''))
+        .forEach(a => {
+          const t = turnosById[a.TurnoID] || {};
+          const tr = torresById[a.Torre] || {};
+          const rango = (a.FechaInicio || a.FechaFin) ? (a.FechaInicio||'…') + ' → ' + (a.FechaFin||'…') : 'Siempre';
+          html += '<div class="asig-row"><span>' + (t.Nombre||a.TurnoID) + ' · ' + (tr.Nombre||a.Torre) + ' · ' + rango + ' · ' + a['Dias (separados por coma)'] + '</span>' +
+            '<button class="del-btn" onclick="eliminar(\'' + a.ID + '\')">Quitar</button></div>';
+        });
       html += '</div>';
     });
     document.getElementById('listado').innerHTML = html;
@@ -125,33 +206,39 @@
 
   function toggleDia(d) {
     const el = document.getElementById('dia-' + d);
-    if (diasSeleccionados.includes(d)) {
-      diasSeleccionados = diasSeleccionados.filter(x => x !== d);
-      el.classList.remove('active');
-    } else {
-      diasSeleccionados.push(d);
-      el.classList.add('active');
-    }
+    if (diasSeleccionados.includes(d)) { diasSeleccionados = diasSeleccionados.filter(x => x !== d); el.classList.remove('active'); }
+    else { diasSeleccionados.push(d); el.classList.add('active'); }
+  }
+  function toggleRotDia(d) {
+    const el = document.getElementById('rotdia-' + d);
+    if (rotDias.includes(d)) { rotDias = rotDias.filter(x => x !== d); el.classList.remove('active'); }
+    else { rotDias.push(d); el.classList.add('active'); }
   }
 
   function agregar() {
     const rut = document.getElementById('selPersona').value;
     const torre = document.getElementById('selTorre').value;
     const turnoId = document.getElementById('selTurno').value;
+    const fechaInicio = document.getElementById('fechaInicio').value;
+    const fechaFin = document.getElementById('fechaFin').value;
     if (!rut || !torre || !turnoId || diasSeleccionados.length === 0) {
       document.getElementById('status').textContent = 'Completa persona, torre, turno y al menos un día.';
       return;
     }
     document.getElementById('btnAgregar').disabled = true;
+    document.getElementById('warnBox').innerHTML = '';
     fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'asignar', asignacion: { rut, torre, turnoId, dias: diasSeleccionados } })
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'asignar', asignacion: { rut, torre, turnoId, fechaInicio, fechaFin, dias: diasSeleccionados } })
     })
       .then(r => r.json())
       .then(res => {
         if (res.error) throw new Error(res.error);
         document.getElementById('status').innerHTML = '<div class="status">✓ Asignación agregada</div>';
+        if (res.conflictos && res.conflictos.length) {
+          document.getElementById('warnBox').innerHTML = '<div class="warn-box"><b>⚠ Cruce detectado</b> — misma torre y turno ya asignados a:<br>' +
+            res.conflictos.map(c => c.nombre + ' (' + c.fechaInicio + ' → ' + c.fechaFin + ', ' + c.dias + ')').join('<br>') + '</div>';
+        }
         diasSeleccionados = [];
         cargarMeta();
       })
@@ -161,14 +248,83 @@
 
   function eliminar(id) {
     if (!confirm('¿Quitar esta asignación?')) return;
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'eliminarAsignacion', id: id })
-    })
-      .then(r => r.json())
-      .then(() => cargarMeta())
+    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'eliminarAsignacion', id }) })
+      .then(r => r.json()).then(() => cargarMeta())
       .catch(err => alert('Error: ' + err.message));
+  }
+
+  /* ===== ROTACIÓN ===== */
+  function agregarASecuencia() {
+    const sel = document.getElementById('rotTurnoSelect');
+    const t = META.turnos.find(x => x.ID === sel.value);
+    if (!t) return;
+    rotSecuencia.push(t.ID);
+    renderSecuencia();
+  }
+  function quitarDeSecuencia(idx) { rotSecuencia.splice(idx, 1); renderSecuencia(); }
+  function renderSecuencia() {
+    const turnosById = {}; META.turnos.forEach(t => turnosById[t.ID] = t);
+    document.getElementById('rotSecuencia').innerHTML =
+      '<button class="dia-btn" onclick="agregarASecuencia()">+ Agregar turno seleccionado a la secuencia</button>' +
+      '<div class="rotacion-list">' + rotSecuencia.map((id, i) =>
+        '<div>Semana ' + (i+1) + ' (y repite): <b>' + (turnosById[id]?turnosById[id].Nombre:id) + '</b> ' +
+        '<button class="del-btn" onclick="quitarDeSecuencia(' + i + ')">quitar</button></div>'
+      ).join('') + '</div>';
+  }
+
+  function generarRotacion() {
+    const rut = document.getElementById('rotPersona').value;
+    const torre = document.getElementById('rotTorre').value;
+    const fechaInicioSemana = document.getElementById('rotInicio').value;
+    const semanas = parseInt(document.getElementById('rotSemanas').value, 10);
+    if (!rut || !torre || rotSecuencia.length === 0 || rotDias.length === 0 || !fechaInicioSemana || !semanas) {
+      document.getElementById('rotStatus').textContent = 'Completa persona, torre, secuencia de turnos, días y fecha de inicio.';
+      return;
+    }
+    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'generarRotacion', rotacion: { rut, torre, turnos: rotSecuencia, dias: rotDias, fechaInicioSemana, semanas } }) })
+      .then(r => r.json())
+      .then(res => {
+        if (res.error) throw new Error(res.error);
+        document.getElementById('rotStatus').innerHTML = '<div class="status">✓ ' + res.creadas.length + ' semanas generadas</div>';
+        if (res.conflictos && res.conflictos.length) {
+          document.getElementById('rotWarnBox').innerHTML = '<div class="warn-box"><b>⚠ Se detectaron cruces en ' + res.conflictos.length + ' semana(s)</b> — revisa el listado de Asignación puntual para más detalle.</div>';
+        } else {
+          document.getElementById('rotWarnBox').innerHTML = '';
+        }
+        cargarMeta();
+      })
+      .catch(err => { document.getElementById('rotStatus').textContent = 'Error: ' + err.message; });
+  }
+
+  /* ===== CALENDARIO ===== */
+  function cargarCalendario() {
+    const rut = document.getElementById('calPersona').value;
+    const mes = document.getElementById('calMes').value;
+    if (!rut) { document.getElementById('calGrid').innerHTML = '<div class="empty">Elige una persona.</div>'; return; }
+    document.getElementById('calGrid').innerHTML = '<div class="loading">Cargando...</div>';
+    const url = API_URL + '?action=calendario&rut=' + encodeURIComponent(rut) + (mes ? '&mes=' + mes : '');
+    fetch(url).then(r => r.json()).then(renderCalendario)
+      .catch(err => { document.getElementById('calGrid').textContent = 'Error: ' + err.message; });
+  }
+
+  function renderCalendario(data) {
+    if (!data.dias) { document.getElementById('calGrid').innerHTML = '<div class="empty">Sin datos.</div>'; return; }
+    // Calcular offset del primer día del mes (Lun=0..Dom=6)
+    const primerDia = new Date(data.dias[0].fecha + 'T00:00:00');
+    let offset = primerDia.getDay() - 1; if (offset < 0) offset = 6;
+    let html = '<div class="cal-grid">';
+    for (let i = 0; i < offset; i++) html += '<div></div>';
+    data.dias.forEach(d => {
+      const vacio = !d.turno && !d.estadoEspecial;
+      const cls = d.estadoEspecial ? 'licencia' : (vacio ? 'vacio' : '');
+      html += '<div class="cal-day ' + cls + '"><div class="num">' + d.dia + '</div>' +
+        (d.estadoEspecial ? '<div class="turno">' + d.estadoEspecial + '</div>' : (d.turno ? '<div class="turno">' + d.turno + '<br>' + d.torre + '</div>' : '')) +
+        '</div>';
+    });
+    html += '</div>';
+    document.getElementById('calGrid').innerHTML = html;
   }
 </script>
 </body>
