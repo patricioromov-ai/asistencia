@@ -13,15 +13,26 @@
   nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
   nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
   .wrap { padding: 16px; max-width: 900px; margin: 0 auto; }
+  .subtabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .subtab-btn { padding: 7px 14px; border-radius: 8px; border: 1px solid #e6e8ec; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; color: #475569; }
+  .subtab-btn.active { background: #132338; color: #fff; border-color: transparent; }
+  .nav-fecha { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px; }
+  .nav-fecha button { border: 1px solid #e6e8ec; background: #fff; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 14px; }
+  .nav-fecha input { padding: 6px; border-radius: 8px; border: 1px solid #e6e8ec; }
   .card { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e6e8ec; margin-bottom: 16px; overflow-x: auto; }
   .torre-title { font-size: 13px; font-weight: 700; margin: 0 0 8px; }
-  table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 560px; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 400px; }
   th { text-align: center; color: #6b7280; font-size: 10px; padding: 4px; }
   td { padding: 4px; text-align: center; border: 1px solid #f0f1f3; }
   td.bloque-label { text-align: left; font-weight: 700; color: #475569; }
   td.vacio { background: #fef2f2; color: #dc2626; font-weight: 700; }
   td.lleno { background: #ecfdf5; color: #047857; }
-  td.neutro { background: #f8fafc; color: #9aa2ab; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-day { border-radius: 8px; padding: 8px 4px; min-height: 46px; font-size: 11px; text-align: center; }
+  .cal-day .num { font-weight: 700; }
+  .cal-day .huecos { font-size: 10px; margin-top: 2px; }
+  .cal-day.ok { background: #ecfdf5; color: #047857; }
+  .cal-day.warn { background: #fef2f2; color: #dc2626; }
   .loading, .empty { text-align: center; color: #9aa2ab; padding: 20px; font-size: 13px; }
 </style>
 </head>
@@ -37,39 +48,104 @@
   <a href="./config.html">Torres/Deptos</a>
   <a href="./alertas.html">Alertas</a>
 </nav>
-<div class="wrap" id="wrap"><div class="loading">Cargando...</div></div>
+<div class="wrap">
+  <div class="subtabs">
+    <button class="subtab-btn" id="tab-dia" onclick="cambiarModo('dia')">Día</button>
+    <button class="subtab-btn active" id="tab-semana" onclick="cambiarModo('semana')">Semana</button>
+    <button class="subtab-btn" id="tab-mes" onclick="cambiarModo('mes')">Mes</button>
+  </div>
+  <div class="nav-fecha" id="navFecha"></div>
+  <div id="wrap2"><div class="loading">Cargando...</div></div>
+</div>
 
 <script>
   const API_URL = 'https://script.google.com/macros/s/AKfycbw7QqZ8LAUmBjmvqJrc4blBkjfe1igMu24fCyQP9epk0NRwFceQ9kdINitBHvMtD--X/exec';
+  let modo = 'semana';
+  let fechaActual = new Date().toISOString().slice(0, 10);
 
-  fetch(API_URL + '?action=distribucion')
-    .then(r => r.json())
-    .then(render)
-    .catch(err => { document.getElementById('wrap').innerHTML = '<div class="empty">Error: ' + err.message + '</div>'; });
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function addDays(iso, n) { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+  function addMonths(iso, n) { const d = new Date(iso + 'T00:00:00'); d.setMonth(d.getMonth() + n); return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(1); }
 
-  function render(data) {
+  function cambiarModo(m) {
+    modo = m;
+    ['dia','semana','mes'].forEach(t => document.getElementById('tab-' + t).classList.toggle('active', t === m));
+    renderNav();
+    cargar();
+  }
+
+  function renderNav() {
+    const el = document.getElementById('navFecha');
+    const paso = modo === 'dia' ? 1 : modo === 'semana' ? 7 : null;
+    el.innerHTML =
+      '<button onclick="mover(-1)">←</button>' +
+      (modo === 'mes'
+        ? '<input type="month" id="mesInput" value="' + fechaActual.slice(0,7) + '" onchange="fechaActual = this.value + \'-01\'; cargar();">'
+        : '<input type="date" id="fechaInput" value="' + fechaActual + '" onchange="fechaActual = this.value; cargar();">') +
+      '<button onclick="mover(1)">→</button>' +
+      '<button onclick="hoy()" style="font-size:12px;color:#1f3a5f;background:none;border:none;">Hoy</button>';
+  }
+
+  function mover(dir) {
+    if (modo === 'mes') fechaActual = addMonths(fechaActual, dir);
+    else if (modo === 'semana') fechaActual = addDays(fechaActual, dir * 7);
+    else fechaActual = addDays(fechaActual, dir);
+    renderNav(); cargar();
+  }
+  function hoy() { fechaActual = new Date().toISOString().slice(0, 10); renderNav(); cargar(); }
+
+  function cargar() {
+    document.getElementById('wrap2').innerHTML = '<div class="loading">Cargando...</div>';
+    fetch(API_URL + '?action=distribucion&modo=' + modo + '&fecha=' + fechaActual)
+      .then(r => r.json())
+      .then(data => { if (modo === 'mes') renderMes(data); else renderMatriz(data); })
+      .catch(err => { document.getElementById('wrap2').innerHTML = '<div class="empty">Error: ' + err.message + '</div>'; });
+  }
+
+  function renderMatriz(data) {
     if (!data.matriz || data.matriz.length === 0) {
-      document.getElementById('wrap').innerHTML = '<div class="empty">No hay torres configuradas.</div>';
+      document.getElementById('wrap2').innerHTML = '<div class="empty">No hay torres configuradas.</div>';
       return;
     }
-    const cabeceras = data.matriz[0].filas[0].celdas.map(c => c.dia + '<br><span style="font-weight:400;color:#9aa2ab;">' + c.fecha.slice(5) + '</span>');
-    let html = '<div style="text-align:center;font-size:12px;color:#6b7280;margin-bottom:10px;">Semana del ' + data.semanaDesde + ' al ' + data.semanaHasta + '</div>';
+    let titulo = '';
+    if (data.semanaDesde) titulo = 'Semana del ' + data.semanaDesde + ' al ' + data.semanaHasta;
+    else if (data.fecha) titulo = data.diaLabel + ' ' + data.fecha;
+
+    const cabeceras = data.matriz[0].filas[0].celdas.map(c => c.dia + (data.semanaDesde ? '<br><span style="font-weight:400;color:#9aa2ab;">' + c.fecha.slice(5) + '</span>' : ''));
+    let html = '<div style="text-align:center;font-size:12px;color:#6b7280;margin-bottom:10px;">' + titulo + '</div>';
     data.matriz.forEach(torre => {
-      html += '<div class="card"><div class="torre-title">' + torre.torre + (torre.compartida ? ' <span style="font-weight:400;color:#6b7280;font-size:11px;">(sin cobertura fija exigida)</span>' : '') + '</div><table><thead><tr><th></th>' +
+      html += '<div class="card"><div class="torre-title">' + torre.torre + '</div><table><thead><tr><th></th>' +
         cabeceras.map(d => '<th>' + d + '</th>').join('') + '</tr></thead><tbody>';
       torre.filas.forEach(fila => {
         html += '<tr><td class="bloque-label">' + fila.bloque + '</td>';
         fila.celdas.forEach(c => {
           const vacio = c.nombres.length === 0;
-          const cls = torre.compartida ? (vacio ? 'neutro' : 'lleno') : (vacio ? 'vacio' : 'lleno');
-          html += '<td class="' + cls + '">' + (vacio ? '—' : c.nombres.join(', ')) + '</td>';
+          html += '<td class="' + (vacio ? 'vacio' : 'lleno') + '">' + (vacio ? '—' : c.nombres.join(', ')) + '</td>';
         });
         html += '</tr>';
       });
       html += '</tbody></table></div>';
     });
-    document.getElementById('wrap').innerHTML = html;
+    document.getElementById('wrap2').innerHTML = html;
   }
+
+  function renderMes(data) {
+    if (!data.dias) { document.getElementById('wrap2').innerHTML = '<div class="empty">Sin datos.</div>'; return; }
+    const primerDia = new Date(data.dias[0].fecha + 'T00:00:00');
+    let offset = primerDia.getDay() - 1; if (offset < 0) offset = 6;
+    let html = '<div class="card"><div class="cal-grid">';
+    for (let i = 0; i < offset; i++) html += '<div></div>';
+    data.dias.forEach(d => {
+      const cls = d.huecos === 0 ? 'ok' : 'warn';
+      html += '<div class="cal-day ' + cls + '"><div class="num">' + d.dia + '</div>' +
+        '<div class="huecos">' + (d.huecos === 0 ? '✓ completo' : d.huecos + ' hueco' + (d.huecos>1?'s':'')) + '</div></div>';
+    });
+    html += '</div></div>';
+    document.getElementById('wrap2').innerHTML = html;
+  }
+
+  renderNav();
+  cargar();
 </script>
 </body>
 </html>

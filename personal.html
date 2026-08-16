@@ -16,16 +16,20 @@
   .card { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e6e8ec; margin-bottom: 14px; }
   .card h3 { font-size: 14px; margin: 0 0 10px; display:flex; justify-content:space-between; align-items:center; }
   .add-btn, .save-btn { background: #1f3a5f; color: #fff; border: none; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
   @media (min-width: 640px) { .form-grid { grid-template-columns: repeat(3, 1fr); } }
+  .form-grid label { display: block; font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 3px; }
   input, select { font-size: 12px; padding: 7px; border-radius: 6px; border: 1px solid #e6e8ec; width: 100%; }
+  .cancel-btn { background: #fff; color: #475569; border: 1px solid #e6e8ec; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
   .persona { border-bottom: 1px solid #f0f1f3; padding: 10px 0; }
   .persona:last-child { border-bottom: none; }
   .persona.inactivo { opacity: .55; }
-  .p-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
-  .p-info { cursor: pointer; }
-  .nombre { font-weight: 700; font-size: 13px; }
-  .meta { font-size: 11px; color: #6b7280; }
+  .p-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+  .p-info { cursor: pointer; max-width: 100%; }
+  .nombre { font-weight: 700; font-size: 14px; }
+  .meta { font-size: 12px; color: #6b7280; margin: 3px 0 6px; }
+  .meta span { margin-right: 6px; }
+  .tags-row { display: flex; flex-wrap: wrap; gap: 4px; }
   .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
   .tag.off { background: #fee2e2; color: #b91c1c; }
   .actions { display: flex; gap: 10px; align-items: center; }
@@ -58,7 +62,8 @@
       <div class="form-grid">
         <input id="fNombre" placeholder="Nombre completo">
         <input id="fRut" placeholder="RUT">
-        <input id="fCargo" placeholder="Cargo">
+        <select id="fCargo" onchange="document.getElementById('fCargoOtro').style.display = (this.value==='Otro')?'block':'none';"></select>
+        <input id="fCargoOtro" placeholder="Especificar cargo" style="display:none;">
         <select id="fDepto"></select>
         <select id="fTorre"></select>
         <select id="fContrato"><option>Indefinido</option><option>Plazo Fijo</option></select>
@@ -98,6 +103,7 @@
     f.style.display = f.style.display === 'none' ? 'block' : 'none';
     document.getElementById('fDepto').innerHTML = DEPTOS.map(d => '<option>' + d.Nombre + '</option>').join('');
     document.getElementById('fTorre').innerHTML = '<option value="">(sin torre)</option>' + TORRES.map(t => '<option value="' + t.ID + '">' + t.Nombre + '</option>').join('');
+    document.getElementById('fCargo').innerHTML = CARGOS.map(c => '<option>' + c + '</option>').join('');
   }
 
   function render() {
@@ -109,11 +115,15 @@
       const abierto = panelAbierto[p.RUT] || 'none';
       html += '<div class="persona' + (activo ? '' : ' inactivo') + '">' +
         '<div class="p-head">' +
-          '<div class="p-info" onclick="togglePanel(\'' + p.RUT + '\',\'ver\')"><div class="nombre">' + p.Nombre + '</div>' +
-          '<div class="meta">' + p.RUT + ' · ' + p.Cargo + (p.Telefono ? ' · ' + p.Telefono : '') + '</div>' +
-          '<span class="tag">' + p.Departamento + '</span>' +
-          '<span class="tag">' + (p.HorasContractuales||40) + 'h/sem contrato</span>' +
-          (activo ? '' : '<span class="tag off">Inactivo</span>') + '</div>' +
+          '<div class="p-info" onclick="togglePanel(\'' + p.RUT + '\',\'ver\')">' +
+            '<div class="nombre">' + p.Nombre + '</div>' +
+            '<div class="meta"><span>' + p.RUT + '</span><span>' + p.Cargo + '</span>' + (p.Telefono ? '<span>' + p.Telefono + '</span>' : '') + '</div>' +
+            '<div class="tags-row">' +
+              '<span class="tag">' + p.Departamento + '</span>' +
+              '<span class="tag">' + (p.HorasContractuales||40) + 'h/sem contrato</span>' +
+              (activo ? '' : '<span class="tag off">Inactivo</span>') +
+            '</div>' +
+          '</div>' +
           '<div class="actions">' +
             '<button class="link-btn edit" onclick="togglePanel(\'' + p.RUT + '\',\'editar\')">Editar</button>' +
             '<button class="link-btn edit" onclick="togglePanel(\'' + p.RUT + '\',\'estados\')">Vacaciones/Licencia</button>' +
@@ -133,29 +143,44 @@
     render();
   }
 
+  const CARGOS = ['Conserje','Primer Conserje','Portero','Nochero','Conserje part time','Auxiliar','Auxiliar de aseo','Supervisor de aseo','Aseador(a)','Volante','Supervisora','Mantención','Reciclador','Otro'];
+
   function panelEditar(p, abierto) {
     const deptoOpts = DEPTOS.map(d => '<option' + (d.Nombre===p.Departamento?' selected':'') + '>' + d.Nombre + '</option>').join('');
     const torreOpts = '<option value="">(sin torre)</option>' + TORRES.map(t => '<option value="' + t.ID + '"' + (t.ID===p.Torre?' selected':'') + '>' + t.Nombre + '</option>').join('');
+    const cargoConocido = CARGOS.slice(0, -1).includes(p.Cargo);
+    const cargoOpts = CARGOS.map(c => '<option' + (c===p.Cargo?' selected':'') + '>' + c + '</option>').join('');
     return '<div class="panel' + (abierto ? ' open' : '') + '" id="editar-' + p.RUT + '">' +
       '<div class="form-grid">' +
-        '<input id="e-Nombre-' + p.RUT + '" value="' + p.Nombre + '" placeholder="Nombre">' +
-        '<input id="e-Cargo-' + p.RUT + '" value="' + (p.Cargo||'') + '" placeholder="Cargo">' +
-        '<select id="e-Departamento-' + p.RUT + '">' + deptoOpts + '</select>' +
-        '<select id="e-Torre-' + p.RUT + '">' + torreOpts + '</select>' +
-        '<select id="e-Contrato-' + p.RUT + '"><option' + (p.Contrato==='Indefinido'?' selected':'') + '>Indefinido</option><option' + (p.Contrato==='Plazo Fijo'?' selected':'') + '>Plazo Fijo</option></select>' +
-        '<input id="e-SueldoBase-' + p.RUT + '" type="number" value="' + (p.SueldoBase||0) + '" placeholder="Sueldo base">' +
-        '<input id="e-HorasContractuales-' + p.RUT + '" type="number" value="' + (p.HorasContractuales||40) + '" placeholder="Horas contrato/sem.">' +
-        '<input id="e-Telefono-' + p.RUT + '" value="' + (p.Telefono||'') + '" placeholder="Teléfono">' +
-        '<input id="e-FechaIngreso-' + p.RUT + '" value="' + (p.FechaIngreso||'') + '" placeholder="Fecha ingreso (DD-MM-AAAA)">' +
-        '<input id="e-FechaNacimiento-' + p.RUT + '" value="' + (p.FechaNacimiento||'') + '" placeholder="Fecha nacimiento (DD-MM-AAAA)">' +
+        '<div><label>Nombre</label><input id="e-Nombre-' + p.RUT + '" value="' + p.Nombre + '"></div>' +
+        '<div><label>Cargo</label><select id="e-Cargo-' + p.RUT + '" onchange="toggleCargoOtro(\'' + p.RUT + '\')">' + cargoOpts + (cargoConocido ? '' : '') + '</select>' +
+          '<input id="e-CargoOtro-' + p.RUT + '" placeholder="Especificar cargo" value="' + (cargoConocido ? '' : p.Cargo||'') + '" style="margin-top:4px;display:' + (p.Cargo==='Otro'||!cargoConocido&&p.Cargo ? 'block':'none') + ';"></div>' +
+        '<div><label>Departamento</label><select id="e-Departamento-' + p.RUT + '">' + deptoOpts + '</select></div>' +
+        '<div><label>Torre</label><select id="e-Torre-' + p.RUT + '">' + torreOpts + '</select></div>' +
+        '<div><label>Contrato</label><select id="e-Contrato-' + p.RUT + '"><option' + (p.Contrato==='Indefinido'?' selected':'') + '>Indefinido</option><option' + (p.Contrato==='Plazo Fijo'?' selected':'') + '>Plazo Fijo</option></select></div>' +
+        '<div><label>Sueldo base</label><input id="e-SueldoBase-' + p.RUT + '" type="number" value="' + (p.SueldoBase||0) + '"></div>' +
+        '<div><label>Horas contrato/sem.</label><input id="e-HorasContractuales-' + p.RUT + '" type="number" value="' + (p.HorasContractuales||40) + '"></div>' +
+        '<div><label>Teléfono</label><input id="e-Telefono-' + p.RUT + '" value="' + (p.Telefono||'') + '"></div>' +
+        '<div><label>Fecha ingreso</label><input id="e-FechaIngreso-' + p.RUT + '" value="' + (p.FechaIngreso||'') + '" placeholder="DD-MM-AAAA"></div>' +
+        '<div><label>Fecha nacimiento</label><input id="e-FechaNacimiento-' + p.RUT + '" value="' + (p.FechaNacimiento||'') + '" placeholder="DD-MM-AAAA"></div>' +
       '</div>' +
-      '<button class="save-btn" onclick="guardarEdicion(\'' + p.RUT + '\')">Guardar cambios</button>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button class="save-btn" onclick="guardarEdicion(\'' + p.RUT + '\')">Guardar cambios</button>' +
+        '<button class="cancel-btn" onclick="togglePanel(\'' + p.RUT + '\',\'editar\')">Cancelar</button>' +
+      '</div>' +
     '</div>';
   }
 
+  function toggleCargoOtro(rut) {
+    const sel = document.getElementById('e-Cargo-' + rut).value;
+    document.getElementById('e-CargoOtro-' + rut).style.display = (sel === 'Otro') ? 'block' : 'none';
+  }
+
   function guardarEdicion(rut) {
+    const cargoSel = val('e-Cargo-' + rut);
+    const cargoFinal = cargoSel === 'Otro' ? val('e-CargoOtro-' + rut) : cargoSel;
     const cambios = {
-      Nombre: val('e-Nombre-' + rut), Cargo: val('e-Cargo-' + rut), Departamento: val('e-Departamento-' + rut),
+      Nombre: val('e-Nombre-' + rut), Cargo: cargoFinal, Departamento: val('e-Departamento-' + rut),
       Torre: val('e-Torre-' + rut), Contrato: val('e-Contrato-' + rut),
       SueldoBase: Number(val('e-SueldoBase-' + rut)) || 0, HorasContractuales: Number(val('e-HorasContractuales-' + rut)) || 40,
       Telefono: val('e-Telefono-' + rut), FechaIngreso: val('e-FechaIngreso-' + rut), FechaNacimiento: val('e-FechaNacimiento-' + rut)
@@ -186,8 +211,10 @@
     const nombre = document.getElementById('fNombre').value;
     const rut = document.getElementById('fRut').value;
     if (!nombre || !rut) { alert('Nombre y RUT son obligatorios.'); return; }
+    const cargoSel = document.getElementById('fCargo').value;
+    const cargo = cargoSel === 'Otro' ? document.getElementById('fCargoOtro').value : cargoSel;
     const persona = {
-      nombre, rut, cargo: document.getElementById('fCargo').value,
+      nombre, rut, cargo,
       depto: document.getElementById('fDepto').value, torre: document.getElementById('fTorre').value,
       contrato: document.getElementById('fContrato').value,
       sueldoBase: document.getElementById('fSueldo').value, horasContractuales: document.getElementById('fHoras').value,
