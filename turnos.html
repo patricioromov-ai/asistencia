@@ -6,7 +6,7 @@
 <title>Asignar Turnos — JDVM</title>
 <style>
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; color: #1b1f27; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; color: #1b1f27; text-align: left; }
   header { background: linear-gradient(120deg, #1f3a5f, #2f6690); color: #fff; padding: 16px 18px; }
   header h1 { font-size: 16px; margin: 0; }
   nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
@@ -27,13 +27,17 @@
   .dia-btn.active { background: #2f6690; color: #fff; border-color: transparent; }
   .submit-btn { width: 100%; margin-top: 14px; background: #1f3a5f; color: #fff; border: none; border-radius: 10px; padding: 12px; font-weight: 700; font-size: 14px; }
   .submit-btn:disabled { opacity: .5; }
-  .persona-block { border-bottom: 1px solid #f0f1f3; padding: 10px 0; }
-  .persona-block:last-child { border-bottom: none; }
-  .nombre { font-weight: 700; font-size: 13px; }
+  .persona-card { background: #fbfcfd; border: 1px solid #e6e8ec; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .persona-card:last-child { margin-bottom: 0; }
+  .nombre { font-weight: 700; font-size: 15px; color: #1b1f27; text-align: left; margin-bottom: 8px; }
   .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
-  .asig-row { background: #f8fafc; border-radius: 8px; padding: 8px 10px; margin-top: 6px; }
-  .asig-row .asig-info { font-size: 12px; color: #475569; line-height: 1.4; }
-  .asig-row .asig-actions { display: flex; gap: 14px; margin-top: 6px; }
+  .asig-row { background: #f8fafc; border: 1px solid #eef0f3; border-radius: 10px; padding: 10px 12px; margin-top: 8px; text-align: left; }
+  .asig-row .asig-turno { font-weight: 700; font-size: 13px; color: #1f3a5f; text-align: left; }
+  .asig-row .asig-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .asig-row .chip-torre { background: #dbeafe; color: #1e40af; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 10px; }
+  .asig-row .chip-dia { background: #eef2f7; color: #475569; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 10px; }
+  .asig-row .asig-fechas { font-size: 11px; color: #94a3b8; margin-top: 6px; text-align: left; }
+  .asig-row .asig-actions { display: flex; gap: 16px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eef0f3; }
   .del-btn { color: #f43f5e; font-weight: 700; cursor: pointer; border: none; background: none; font-size: 13px; }
   .edit-btn { color: #2f6690; font-weight: 700; cursor: pointer; border: none; background: none; font-size: 13px; }
   .cancel-btn { background: #fff; color: #475569; border: 1px solid #e6e8ec; border-radius: 10px; padding: 10px 16px; font-weight: 700; font-size: 13px; cursor: pointer; }
@@ -232,18 +236,21 @@
       const p = personalByRut[rut];
       let asigs = porRut[rut];
       if (filtroTorre) asigs = asigs.filter(a => a.Torre === filtroTorre);
-      html += '<div class="persona-block"><div class="nombre">' + (p ? p.nombre : rut) + '</div>';
+      html += '<div class="persona-card"><div class="nombre">' + (p ? p.nombre : rut) + '</div>';
       asigs
         .sort((a,b) => (a.FechaInicio||'').localeCompare(b.FechaInicio||''))
         .forEach(a => {
           const t = turnosById[a.TurnoID] || {};
           const tr = torresById[a.Torre] || {};
-          const rango = (a.FechaInicio || a.FechaFin) ? (a.FechaInicio||'…') + ' → ' + (a.FechaFin||'…') : 'Siempre';
+          const rango = (a.FechaInicio || a.FechaFin) ? (a.FechaInicio||'…') + ' → ' + (a.FechaFin||'…') : 'Siempre activo';
+          const diasChips = (a['Dias (separados por coma)']||'').split(',').filter(d=>d.trim()).map(d => '<span class="chip-dia">' + d.trim() + '</span>').join('');
           if (editandoId === a.ID) {
             html += formularioEdicion(a);
           } else {
             html += '<div class="asig-row">' +
-              '<div class="asig-info">' + (t.Nombre||a.TurnoID) + ' · ' + (tr.Nombre||a.Torre) + ' · ' + rango + ' · ' + a['Dias (separados por coma)'] + '</div>' +
+              '<div class="asig-turno">' + (t.Nombre||a.TurnoID) + '</div>' +
+              '<div class="asig-chips"><span class="chip-torre">' + (tr.Nombre||a.Torre) + '</span>' + diasChips + '</div>' +
+              '<div class="asig-fechas">' + rango + '</div>' +
               '<div class="asig-actions">' +
               '<button class="edit-btn" onclick="empezarEdicion(\'' + a.ID + '\')">Editar</button>' +
               '<button class="del-btn" onclick="eliminar(\'' + a.ID + '\')">Quitar</button>' +
