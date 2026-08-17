@@ -16,7 +16,7 @@
   .card { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e6e8ec; margin-bottom: 14px; overflow-x: auto; }
   .card h3 { font-size: 14px; margin: 0 0 10px; display:flex; justify-content:space-between; align-items:center; }
   .add-btn { background: #1f3a5f; color: #fff; border: none; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 640px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 820px; }
   th { text-align: left; color: #6b7280; text-transform: uppercase; font-size: 10px; padding: 6px; border-bottom: 1px solid #e6e8ec; }
   td { padding: 4px 6px; border-bottom: 1px solid #f0f1f3; }
   input, select { font-size: 12px; padding: 5px; border-radius: 6px; border: 1px solid #e6e8ec; width: 100%; }
@@ -56,8 +56,10 @@
   function render(turnos) {
     if (!turnos.length) { document.getElementById('tabla').innerHTML = '<div class="empty">Sin turnos aún.</div>'; return; }
     const deptoOpts = DEPTOS.map(d => '<option>' + d.Nombre + '</option>').join('');
-    let html = '<table><thead><tr><th>Nombre</th><th>Depto</th><th>Grupo</th><th>Inicio</th><th>Fin</th><th>Duración</th><th></th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>Nombre</th><th>Depto</th><th>Grupo</th><th>Inicio</th><th>Fin</th><th>Duración</th><th>Colación no pagada</th><th>Horas al tope 40h</th><th></th></tr></thead><tbody>';
     turnos.forEach(t => {
+      const colacion = Number(t.ColacionMin) || 0;
+      const efectivas = (Number(t.DuracionHoras) || 0) - colacion / 60;
       html += '<tr data-id="' + t.ID + '">' +
         '<td><input value="' + t.Nombre + '" onchange="editar(\'' + t.ID + '\',{nombre:this.value})"></td>' +
         '<td><select onchange="editar(\'' + t.ID + '\',{depto:this.value})">' + DEPTOS.map(d => '<option' + (d.Nombre===t.Departamento?' selected':'') + '>' + d.Nombre + '</option>').join('') + '</select></td>' +
@@ -65,6 +67,8 @@
         '<td><input type="time" value="' + t.HoraInicio + '" onchange="editar(\'' + t.ID + '\',{horaInicio:this.value})"></td>' +
         '<td><input type="time" value="' + t.HoraFin + '" onchange="editar(\'' + t.ID + '\',{horaFin:this.value})"></td>' +
         '<td>' + t.DuracionHoras + 'h</td>' +
+        '<td><input type="number" min="0" step="5" style="width:70px;" value="' + colacion + '" title="Minutos de colación no pagada" onchange="editar(\'' + t.ID + '\',{colacionMin:this.value})"> min</td>' +
+        '<td><b>' + efectivas.toFixed(1) + 'h</b></td>' +
         '<td><button class="del-btn" onclick="eliminar(\'' + t.ID + '\')">✕</button></td>' +
         '</tr>';
     });
