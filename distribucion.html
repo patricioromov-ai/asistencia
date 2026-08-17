@@ -12,7 +12,7 @@
   nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
   nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
   nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
-  .wrap { padding: 16px; max-width: 900px; margin: 0 auto; }
+  .wrap { padding: 16px; max-width: 1400px; margin: 0 auto; }
   .subtabs { display: flex; gap: 8px; margin-bottom: 12px; }
   .subtab-btn { padding: 7px 14px; border-radius: 8px; border: 1px solid #e6e8ec; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; color: #475569; }
   .subtab-btn.active { background: #132338; color: #fff; border-color: transparent; }
@@ -28,7 +28,7 @@
   .card { background: #fff; border-radius: 14px; padding: 18px; border: 1px solid #e6e8ec; margin-bottom: 18px; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
   .torre-title { font-size: 14px; font-weight: 700; margin: 0 0 12px; display: flex; align-items: center; gap: 6px; color: #1b1f27; }
   .torre-title .sub { font-weight: 400; color: #9aa2ab; font-size: 11px; }
-  table { width: 100%; border-collapse: separate; border-spacing: 0 6px; font-size: 12px; min-width: 460px; }
+  table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0 6px; font-size: 12px; min-width: 0; }
   th { text-align: center; color: #94a3b8; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; padding: 0 4px 6px; }
   th .dia-num { display: block; font-weight: 400; color: #cbd5e1; font-size: 9px; text-transform: none; margin-top: 1px; }
   th.finde { color: #b45309; }
@@ -37,7 +37,8 @@
   td:last-child { border-right: 1px solid #f0f1f3; border-radius: 0 8px 8px 0; }
   td.bloque-label { text-align: left; font-weight: 700; color: #475569; font-size: 11px; padding-left: 10px; white-space: nowrap; }
   .chip-list { display: flex; flex-direction: column; gap: 3px; align-items: center; }
-  .chip { background: #d1fae5; color: #047857; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+  .chip { background: #d1fae5; color: #047857; font-size: 9.5px; font-weight: 600; padding: 2px 6px; border-radius: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  td.bloque-label { width: 70px; }
   td.vacio { background: #fef2f2; }
   td.vacio .dash { color: #f87171; font-weight: 700; font-size: 13px; }
   td.neutro { background: #f8fafc; }
@@ -143,6 +144,11 @@
       .catch(err => { document.getElementById('wrap2').innerHTML = '<div class="empty">Error: ' + err.message + '</div>'; });
   }
 
+  function nombreCorto(nombreCompleto) {
+    const partes = nombreCompleto.trim().split(/\s+/);
+    return partes.slice(0, 2).join(' '); // Apellido Apellido, sin nombres de pila (ahorra espacio en la tabla)
+  }
+
   function renderMatriz(data) {
     if (!data.matriz || data.matriz.length === 0) {
       document.getElementById('wrap2').innerHTML = '<div class="empty">No hay torres configuradas.</div>';
@@ -166,7 +172,7 @@
           let clase = vacio ? (filaVacia ? 'neutro' : 'vacio') : '';
           const contenido = vacio
             ? '<span class="dash">—</span>'
-            : '<div class="chip-list">' + c.nombres.map(n => '<span class="chip">' + n + '</span>').join('') + '</div>';
+            : '<div class="chip-list">' + c.nombres.map(n => '<span class="chip" title="' + n + '">' + nombreCorto(n) + '</span>').join('') + '</div>';
           html += '<td class="' + clase + '">' + contenido + '</td>';
         });
         html += '</tr>';
