@@ -23,9 +23,10 @@
     .ir-fecha input { margin-top: 6px; padding: 8px; border-radius: 8px; border: 1px solid #e6e8ec; font-size: 14px; }
     .licencia-box { background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 12px; color: #075985; }
     .card { background: #fff; border-radius: 14px; padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border: 1px solid #e6e8ec; }
-    .nombre { font-weight: 700; font-size: 14px; }
+    .nombre { font-weight: 700; font-size: 17px; }
     .meta { font-size: 12px; color: #6b7280; margin-top: 2px; }
-    .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
+    .tag { display: inline-block; font-size: 12.5px; font-weight: 600; padding: 4px 11px; border-radius: 20px; background: #eef2f7; color: #334155; margin: 3px 4px 0 0; line-height: 1.5; }
+    .tag.torre { background: #dbeafe; color: #1e40af; }
     .btns { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
     .btn { flex: 1; min-width: 64px; padding: 9px 4px; border-radius: 10px; border: 1px solid #e6e8ec; background: #fff; font-weight: 700; font-size: 12px; text-align: center; cursor: pointer; }
     .btn.p.active { background: #10b981; color: #fff; border-color: transparent; }
@@ -35,10 +36,13 @@
     .btn.o.active { background: #64748b; color: #fff; border-color: transparent; }
     select.motivo, input.horas { width: 100%; margin-top: 8px; padding: 8px; border-radius: 8px; border: 1px solid #e6e8ec; font-size: 13px; }
     input.horas.nota-req { border-color: #f59e0b; }
-    .ya-marcado { font-size: 11px; color: #16a34a; font-weight: 600; margin-top: 6px; }
+    .ya-marcado { font-size: 12px; color: #16a34a; font-weight: 600; margin-top: 8px; }
+    .edit-link { background: none; border: none; color: #2f6690; font-weight: 700; font-size: 12px; text-decoration: underline; cursor: pointer; padding: 0; margin-left: 4px; }
+    .cancel-edit-btn { display: block; margin-top: 8px; background: #fff; color: #475569; border: 1px solid #e6e8ec; border-radius: 8px; padding: 8px; font-weight: 700; font-size: 12px; cursor: pointer; width: 100%; }
     .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e6e8ec; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
     .save-btn { background: #1f3a5f; color: #fff; border: none; border-radius: 10px; padding: 12px 20px; font-weight: 700; font-size: 14px; width: 100%; }
-    .save-btn:disabled { opacity: .5; }
+    .save-btn-top { position: sticky; top: 0; z-index: 5; background: #1f3a5f; color: #fff; border: none; border-radius: 10px; padding: 11px 16px; font-weight: 700; font-size: 13px; width: 100%; margin-bottom: 14px; box-shadow: 0 2px 6px rgba(0,0,0,.12); }
+    .save-btn-top:disabled, .save-btn:disabled { opacity: .5; }
     .empty { text-align: center; color: #9aa2ab; font-size: 13px; padding: 30px 10px; }
     .status { text-align: center; font-size: 12px; color: #16a34a; margin-bottom: 6px; }
     .loading { text-align: center; padding: 40px; color: #9aa2ab; font-size: 13px; }
@@ -61,6 +65,7 @@
   <div class="wrap">
     <div class="nav-fecha" id="navFecha"></div>
     <details class="ir-fecha"><summary>Ir a una fecha específica</summary><div id="irFechaBox"></div></details>
+    <button class="save-btn-top" id="saveBtnTop" onclick="guardar()" disabled>Guardar asistencia</button>
     <div id="contenido">
       <div class="loading">Cargando trabajadores del día...</div>
     </div>
@@ -78,6 +83,8 @@
   let PERSONAL_ALL = [];
   let fechaActual = new Date().toISOString().slice(0, 10);
   const marks = {}; // rut -> {codigo, motivo, horasExtra, reemplazante, motivoHorasExtra, minutosAtraso, nota}
+  const editando = {}; // rut -> true mientras se edita un registro ya guardado
+  const CODIGO_LABEL = { P: 'Presente', T: 'Atraso', A: 'Ausente', L: 'Licencia', O: 'Otro' };
 
   function pad(n) { return String(n).padStart(2, '0'); }
   function addDays(iso, n) { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
@@ -139,17 +146,35 @@
   function cardHtml(p) {
     const marcado = p.yaMarcado;
     const reemplazoOpts = PERSONAL_ALL.filter(x => x.rut !== p.rut).map(x => '<option value="' + x.rut + '">' + x.nombre + '</option>').join('');
+    const enEdicion = editando[p.rut];
     return (
       '<div class="card" id="card-' + p.rut + '">' +
         '<div class="nombre">' + p.nombre + '</div>' +
         '<div class="meta">' +
           '<span class="tag">' + p.depto + '</span>' +
-          '<span class="tag">Torre ' + p.torre + '</span>' +
+          '<span class="tag torre">' + p.torreNombre + '</span>' +
           '<span class="tag">' + p.turnoNombre + ' (' + p.horaInicio + '-' + p.horaFin + ')</span>' +
         '</div>' +
-        (marcado
-          ? '<div class="ya-marcado">Ya marcado ese día: ' + marcado + '</div>'
-          : (
+        (marcado && !enEdicion
+          ? resumenMarcado(p, marcado)
+          : formularioMarcado(p, reemplazoOpts, marcado)
+        ) +
+      '</div>'
+    );
+  }
+
+  function resumenMarcado(p, marcado) {
+    const detalle = [];
+    if (marcado.codigo === 'T' && marcado.minutosAtraso) detalle.push(marcado.minutosAtraso + ' min de atraso');
+    if (marcado.motivo) detalle.push(marcado.motivo);
+    if (marcado.reemplazante) detalle.push('reemplazo: ' + marcado.reemplazante);
+    return '<div class="ya-marcado">Ya marcado: <b>' + (CODIGO_LABEL[marcado.codigo] || marcado.codigo) + '</b>' +
+      (detalle.length ? ' — ' + detalle.join(' · ') : '') +
+      ' <button class="edit-link" onclick="empezarEdicionAsistencia(\'' + p.rut + '\')">Editar</button></div>';
+  }
+
+  function formularioMarcado(p, reemplazoOpts, marcado) {
+    return (
             '<div class="btns">' +
               '<div class="btn p" onclick="marcar(\'' + p.rut + '\',\'P\')" id="btnP-' + p.rut + '">Presente</div>' +
               '<div class="btn t" onclick="marcar(\'' + p.rut + '\',\'T\')" id="btnT-' + p.rut + '">Atraso</div>' +
@@ -171,10 +196,8 @@
               '<option value="">¿Quién lo reemplaza? (opcional)</option>' + reemplazoOpts +
             '</select>' +
             '<input class="horas" id="horasextra-' + p.rut + '" style="display:none" type="number" min="0" step="0.5" placeholder="Horas extra (opcional)" onchange="setCampo(\'' + p.rut + '\',\'horasExtra\',this.value)">' +
-            '<input class="horas" id="motivohoras-' + p.rut + '" style="display:none" type="text" placeholder="Motivo de la hora extra (opcional)" onchange="setCampo(\'' + p.rut + '\',\'motivoHorasExtra\',this.value)">'
-          )
-        ) +
-      '</div>'
+            '<input class="horas" id="motivohoras-' + p.rut + '" style="display:none" type="text" placeholder="Motivo de la hora extra (opcional)" onchange="setCampo(\'' + p.rut + '\',\'motivoHorasExtra\',this.value)">' +
+            (marcado ? '<button class="cancel-edit-btn" onclick="cancelarEdicionAsistencia(\'' + p.rut + '\')">Cancelar edición</button>' : '')
     );
   }
 
@@ -194,11 +217,57 @@
   }
   function setCampo(rut, campo, v) { marks[rut] = marks[rut] || {}; marks[rut][campo] = v; }
 
+  function empezarEdicionAsistencia(rut) {
+    editando[rut] = true;
+    const p = SCHEDULE.find(x => x.rut === rut);
+    render({ trabajadores: SCHEDULE, conLicenciaHoy: [] }); // re-dibuja sin perder la lista ya cargada
+    // pre-cargar el formulario con los valores actuales guardados
+    const m = p.yaMarcado;
+    marks[rut] = { codigo: m.codigo, motivo: m.motivo || '', horasExtra: m.horasExtra || '', reemplazante: '', motivoHorasExtra: m.motivoHorasExtra || '', minutosAtraso: m.minutosAtraso || '', nota: (m.codigo !== 'A' ? m.motivo || '' : '') };
+    marcar(rut, m.codigo);
+    if (m.motivo && m.codigo === 'A') document.getElementById('motivo-' + rut).value = m.motivo;
+    if (m.motivo && m.codigo !== 'A') document.getElementById('nota-' + rut).value = m.motivo;
+    if (m.minutosAtraso) document.getElementById('atraso-min-' + rut).value = m.minutosAtraso;
+    if (m.horasExtra) document.getElementById('horasextra-' + rut).value = m.horasExtra;
+    if (m.motivoHorasExtra) document.getElementById('motivohoras-' + rut).value = m.motivoHorasExtra;
+    reaplicarMarcasVisuales();
+    updateSaveButton();
+  }
+
+  function cancelarEdicionAsistencia(rut) {
+    delete editando[rut];
+    delete marks[rut];
+    render({ trabajadores: SCHEDULE, conLicenciaHoy: [] });
+    reaplicarMarcasVisuales();
+    updateSaveButton();
+  }
+
+  /** Después de redibujar la lista (al entrar/salir de modo edición), vuelve a marcar visualmente
+   *  a todos los que ya tenían algo seleccionado antes, para no perder lo hecho en otras tarjetas. */
+  function reaplicarMarcasVisuales() {
+    Object.keys(marks).forEach(function(rut) {
+      const codigo = marks[rut].codigo;
+      const btnEl = document.getElementById('btnP-' + rut);
+      if (!codigo || !btnEl) return;
+      ['P','T','A','L','O'].forEach(c => { const el = document.getElementById('btn' + c + '-' + rut); if (el) el.classList.toggle('active', c === codigo); });
+      const show = function(id, cond) { const el = document.getElementById(id); if (el) el.style.display = cond ? 'block' : 'none'; };
+      show('motivo-' + rut, codigo === 'A');
+      show('atraso-min-' + rut, codigo === 'T');
+      show('nota-' + rut, codigo === 'T' || codigo === 'L' || codigo === 'O');
+      show('reemplazante-' + rut, codigo === 'A');
+      show('horasextra-' + rut, codigo === 'A');
+      show('motivohoras-' + rut, codigo === 'A');
+    });
+  }
+
   function updateSaveButton() {
     const n = Object.keys(marks).filter(function(r){ return marks[r].codigo; }).length;
-    const btn = document.getElementById('saveBtn');
-    btn.disabled = n === 0;
-    btn.textContent = n === 0 ? 'Guardar asistencia' : 'Guardar asistencia (' + n + ')';
+    const texto = n === 0 ? 'Guardar asistencia' : 'Guardar asistencia (' + n + ')';
+    ['saveBtn', 'saveBtnTop'].forEach(function(id) {
+      const btn = document.getElementById(id);
+      btn.disabled = n === 0;
+      btn.textContent = texto;
+    });
   }
 
   function guardar() {
@@ -217,39 +286,58 @@
     }
 
     const records = [];
+    const ediciones = [];
     SCHEDULE.forEach(function(p) {
       const m = marks[p.rut];
       if (m && m.codigo) {
         const reemplazanteNombre = m.reemplazante ? (PERSONAL_ALL.find(x => x.rut === m.reemplazante) || {}).nombre : '';
         // para Atraso/Licencia/Otro, la nota va en el mismo campo "motivo" para quedar guardada
         const motivoFinal = m.codigo === 'A' ? (m.motivo || '') : (m.nota || '');
-        records.push({
+        const datos = {
           rut: p.rut, nombre: p.nombre, codigo: m.codigo,
           motivo: motivoFinal, horasExtra: m.horasExtra || '',
           torre: p.torre, turnoNombre: p.turnoNombre,
           reemplazante: reemplazanteNombre || '', motivoHorasExtra: m.motivoHorasExtra || '',
           minutosAtraso: m.minutosAtraso || ''
-        });
+        };
+        if (editando[p.rut]) ediciones.push(datos);
+        else records.push(datos);
       }
     });
-    if (records.length === 0) return;
-    document.getElementById('saveBtn').disabled = true;
-    document.getElementById('saveBtn').textContent = 'Guardando...';
+    if (records.length === 0 && ediciones.length === 0) return;
+    ['saveBtn', 'saveBtnTop'].forEach(function(id) {
+      document.getElementById(id).disabled = true;
+      document.getElementById(id).textContent = 'Guardando...';
+    });
 
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita el preflight CORS que Apps Script no responde
-      body: JSON.stringify({ action: 'submit', fecha: fechaActual, records: records })
-    })
-      .then(function(r){ return r.json(); })
-      .then(function(res) {
-        if (res.error) throw new Error(res.error);
-        document.getElementById('contenido').innerHTML = '<div class="status">✓ Guardado — ' + res.count + ' registro(s)</div>';
+    const llamadas = [];
+    if (records.length > 0) {
+      llamadas.push(fetch(API_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'submit', fecha: fechaActual, records: records })
+      }).then(function(r){ return r.json(); }));
+    }
+    ediciones.forEach(function(datos) {
+      llamadas.push(fetch(API_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'editarAsistencia', fecha: fechaActual, rut: datos.rut, cambios: {
+          codigo: datos.codigo, motivo: datos.motivo, horasExtra: datos.horasExtra,
+          reemplazante: datos.reemplazante, motivoHorasExtra: datos.motivoHorasExtra, minutosAtraso: datos.minutosAtraso
+        } })
+      }).then(function(r){ return r.json(); }));
+    });
+
+    Promise.all(llamadas)
+      .then(function(resultados) {
+        const conError = resultados.find(function(r){ return r.error; });
+        if (conError) throw new Error(conError.error);
+        const total = records.length + ediciones.length;
+        document.getElementById('contenido').innerHTML = '<div class="status">✓ Guardado — ' + total + ' registro(s)</div>';
         setTimeout(function(){ cargarTodo(); }, 1000);
       })
       .catch(function(err) {
         alert('Error al guardar: ' + err.message);
-        document.getElementById('saveBtn').disabled = false;
+        ['saveBtn', 'saveBtnTop'].forEach(function(id) { document.getElementById(id).disabled = false; });
       });
   }
 
