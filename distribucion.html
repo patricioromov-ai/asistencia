@@ -25,14 +25,25 @@
   .ir-fecha { text-align: center; margin-bottom: 14px; }
   .ir-fecha summary { font-size: 12px; color: #6b7280; cursor: pointer; text-decoration: underline; }
   .ir-fecha input { margin-top: 6px; padding: 8px; border-radius: 8px; border: 1px solid #e6e8ec; font-size: 14px; }
-  .card { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e6e8ec; margin-bottom: 16px; overflow-x: auto; }
-  .torre-title { font-size: 13px; font-weight: 700; margin: 0 0 8px; }
-  table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 400px; }
-  th { text-align: center; color: #6b7280; font-size: 10px; padding: 4px; }
-  td { padding: 4px; text-align: center; border: 1px solid #f0f1f3; }
-  td.bloque-label { text-align: left; font-weight: 700; color: #475569; }
-  td.vacio { background: #fef2f2; color: #dc2626; font-weight: 700; }
-  td.lleno { background: #ecfdf5; color: #047857; }
+  .card { background: #fff; border-radius: 14px; padding: 18px; border: 1px solid #e6e8ec; margin-bottom: 18px; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .torre-title { font-size: 14px; font-weight: 700; margin: 0 0 12px; display: flex; align-items: center; gap: 6px; color: #1b1f27; }
+  .torre-title .sub { font-weight: 400; color: #9aa2ab; font-size: 11px; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0 6px; font-size: 12px; min-width: 460px; }
+  th { text-align: center; color: #94a3b8; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; padding: 0 4px 6px; }
+  th .dia-num { display: block; font-weight: 400; color: #cbd5e1; font-size: 9px; text-transform: none; margin-top: 1px; }
+  th.finde { color: #b45309; }
+  td { padding: 10px 6px; text-align: center; vertical-align: middle; border-top: 1px solid #f0f1f3; border-bottom: 1px solid #f0f1f3; }
+  td:first-child { border-left: 1px solid #f0f1f3; border-radius: 8px 0 0 8px; }
+  td:last-child { border-right: 1px solid #f0f1f3; border-radius: 0 8px 8px 0; }
+  td.bloque-label { text-align: left; font-weight: 700; color: #475569; font-size: 11px; padding-left: 10px; white-space: nowrap; }
+  .chip-list { display: flex; flex-direction: column; gap: 3px; align-items: center; }
+  .chip { background: #d1fae5; color: #047857; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+  td.vacio { background: #fef2f2; }
+  td.vacio .dash { color: #f87171; font-weight: 700; font-size: 13px; }
+  td.neutro { background: #f8fafc; }
+  td.neutro .dash { color: #cbd5e1; font-weight: 400; }
+  tr.fila-vacia td.bloque-label { color: #b8bfc9; }
+  tr.fila-vacia .dash { color: #d8dde3; }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
   .cal-day { border-radius: 8px; padding: 8px 4px; min-height: 46px; font-size: 11px; text-align: center; }
   .cal-day .num { font-weight: 700; }
@@ -137,16 +148,26 @@
       document.getElementById('wrap2').innerHTML = '<div class="empty">No hay torres configuradas.</div>';
       return;
     }
-    const cabeceras = data.matriz[0].filas[0].celdas.map(c => c.dia + (data.semanaDesde ? '<br><span style="font-weight:400;color:#9aa2ab;">' + c.fecha.slice(5) + '</span>' : ''));
+    const celdasBase = data.matriz[0].filas[0].celdas;
+    const cabeceras = celdasBase.map(c => {
+      const esFinde = c.dia === 'Sáb' || c.dia === 'Dom';
+      const fechaChica = data.semanaDesde ? '<span class="dia-num">' + c.fecha.slice(5) + '</span>' : '';
+      return '<th class="' + (esFinde ? 'finde' : '') + '">' + c.dia + fechaChica + '</th>';
+    });
     let html = '';
     data.matriz.forEach(torre => {
-      html += '<div class="card"><div class="torre-title">' + torre.torre + '</div><table><thead><tr><th></th>' +
-        cabeceras.map(d => '<th>' + d + '</th>').join('') + '</tr></thead><tbody>';
+      html += '<div class="card"><div class="torre-title">' + torre.torre + (torre.compartida ? '<span class="sub">· cobertura flexible, no exige bloque fijo</span>' : '') + '</div><table><thead><tr><th></th>' +
+        cabeceras.join('') + '</tr></thead><tbody>';
       torre.filas.forEach(fila => {
-        html += '<tr><td class="bloque-label">' + fila.bloque + '</td>';
+        const filaVacia = fila.celdas.every(c => c.nombres.length === 0);
+        html += '<tr class="' + (filaVacia ? 'fila-vacia' : '') + '"><td class="bloque-label">' + fila.bloque + '</td>';
         fila.celdas.forEach(c => {
           const vacio = c.nombres.length === 0;
-          html += '<td class="' + (vacio ? 'vacio' : 'lleno') + '">' + (vacio ? '—' : c.nombres.join(', ')) + '</td>';
+          let clase = vacio ? (filaVacia ? 'neutro' : 'vacio') : '';
+          const contenido = vacio
+            ? '<span class="dash">—</span>'
+            : '<div class="chip-list">' + c.nombres.map(n => '<span class="chip">' + n + '</span>').join('') + '</div>';
+          html += '<td class="' + clase + '">' + contenido + '</td>';
         });
         html += '</tr>';
       });
