@@ -6,53 +6,67 @@
 <title>Asignar Turnos — JDVM</title>
 <style>
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; color: #1b1f27; text-align: left; }
-  header { background: linear-gradient(120deg, #1f3a5f, #2f6690); color: #fff; padding: 16px 18px; }
-  header h1 { font-size: 16px; margin: 0; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; color: #1b1f27; text-align: left; font-size: 15px; line-height: 1.5; }
+  header { background: linear-gradient(120deg, #1f3a5f, #2f6690); color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 19px; margin: 0; font-weight: 700; }
   nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
-  nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
+  nav a { display: inline-block; padding: 12px 16px; font-size: 14px; color: #475569; text-decoration: none; font-weight: 600; }
   nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
-  .wrap { padding: 14px; max-width: 820px; margin: 0 auto; }
-  .subtabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-  .subtab-btn { padding: 7px 14px; border-radius: 8px; border: 1px solid #e6e8ec; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; color: #475569; }
+  .wrap { padding: 20px; max-width: 1100px; margin: 0 auto; }
+  .subtabs { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .subtab-btn { padding: 10px 18px; border-radius: 10px; border: 1px solid #e6e8ec; background: #fff; font-size: 14px; font-weight: 600; cursor: pointer; color: #475569; transition: all .15s; }
+  .subtab-btn:hover { border-color: #94a3b8; }
   .subtab-btn.active { background: #132338; color: #fff; border-color: transparent; }
-  .card { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border: 1px solid #e6e8ec; }
-  .card h3 { font-size: 14px; margin: 0 0 10px; }
-  label { font-size: 12px; color: #6b7280; display: block; margin: 10px 0 4px; }
-  select, input { width: 100%; padding: 9px; border-radius: 8px; border: 1px solid #e6e8ec; font-size: 14px; }
-  #filtrosAsignaciones select, #filtrosAsignaciones input { width: auto; font-size: 13px; padding: 7px 9px; }
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .dias { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-  .dia-btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #e6e8ec; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .card { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(16,24,40,.06); border: 1px solid #e6e8ec; }
+  .card h3 { font-size: 17px; margin: 0 0 4px; font-weight: 700; color: #111827; }
+  .card > p { font-size: 13.5px; color: #6b7280; margin: 0 0 16px; }
+  label { font-size: 13px; color: #475569; font-weight: 600; display: block; margin: 14px 0 6px; }
+  select, input { width: 100%; padding: 11px 12px; border-radius: 9px; border: 1px solid #dde1e6; font-size: 14.5px; background: #fff; }
+  select:focus, input:focus { outline: none; border-color: #2f6690; box-shadow: 0 0 0 3px rgba(47,102,144,.12); }
+  #filtrosAsignaciones select, #filtrosAsignaciones input { width: auto; font-size: 13.5px; padding: 9px 12px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .dias { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .dia-btn { padding: 9px 15px; border-radius: 9px; border: 1px solid #dde1e6; background: #fff; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .dia-btn:hover { border-color: #94a3b8; }
   .dia-btn.active { background: #2f6690; color: #fff; border-color: transparent; }
-  .submit-btn { width: 100%; margin-top: 14px; background: #1f3a5f; color: #fff; border: none; border-radius: 10px; padding: 12px; font-weight: 700; font-size: 14px; }
-  .submit-btn:disabled { opacity: .5; }
-  .persona-card { background: #fbfcfd; border: 1px solid #e6e8ec; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
-  .persona-card:last-child { margin-bottom: 0; }
-  .nombre { font-weight: 700; font-size: 15px; color: #1b1f27; text-align: left; margin-bottom: 8px; }
-  .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
-  .asig-row { background: #f8fafc; border: 1px solid #eef0f3; border-radius: 10px; padding: 10px 12px; margin-top: 8px; text-align: left; }
-  .asig-row .asig-turno { font-weight: 700; font-size: 13px; color: #1f3a5f; text-align: left; }
-  .asig-row .asig-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-  .asig-row .chip-torre { background: #dbeafe; color: #1e40af; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 10px; }
-  .asig-row .chip-dia { background: #eef2f7; color: #475569; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 10px; }
-  .asig-row .asig-fechas { font-size: 11px; color: #94a3b8; margin-top: 6px; text-align: left; }
-  .asig-row .asig-actions { display: flex; gap: 16px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eef0f3; }
-  .del-btn { color: #f43f5e; font-weight: 700; cursor: pointer; border: none; background: none; font-size: 13px; }
-  .edit-btn { color: #2f6690; font-weight: 700; cursor: pointer; border: none; background: none; font-size: 13px; }
-  .cancel-btn { background: #fff; color: #475569; border: 1px solid #e6e8ec; border-radius: 10px; padding: 10px 16px; font-weight: 700; font-size: 13px; cursor: pointer; }
-  .asig-edit { background: #f8fafc; border: 1px solid #e6e8ec; border-radius: 10px; padding: 12px; margin-top: 6px; }
-  .asig-edit label { font-size: 11px; color: #6b7280; display: block; margin: 6px 0 3px; }
-  .status { text-align: center; font-size: 14px; font-weight: 700; color: #fff; background: #16a34a; margin: 10px 0; padding: 10px; border-radius: 8px; }
+  .submit-btn { width: 100%; margin-top: 18px; background: #1f3a5f; color: #fff; border: none; border-radius: 11px; padding: 14px; font-weight: 700; font-size: 15px; cursor: pointer; transition: background .15s; }
+  .submit-btn:hover { background: #16304f; }
+  .submit-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .listado-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 760px) { .listado-grid { grid-template-columns: 1fr 1fr; } }
+
+  .persona-card { background: #fbfcfd; border: 1px solid #e6e8ec; border-radius: 14px; padding: 18px; }
+  .nombre { font-weight: 700; font-size: 16.5px; color: #111827; text-align: left; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #edf0f3; }
+  .tag { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
+
+  .asig-row { background: #fff; border: 1px solid #e9edf1; border-radius: 12px; padding: 14px 16px; margin-top: 10px; text-align: left; box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+  .asig-row:first-of-type { margin-top: 0; }
+  .asig-row .asig-turno { font-weight: 700; font-size: 14.5px; color: #1f3a5f; text-align: left; }
+  .asig-row .asig-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+  .asig-row .chip-torre { background: #dbeafe; color: #1e40af; font-size: 12px; font-weight: 600; padding: 4px 11px; border-radius: 10px; }
+  .asig-row .chip-dia { background: #eef2f7; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 11px; border-radius: 10px; }
+  .asig-row .asig-fechas { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #475569; font-weight: 600; margin-top: 10px; text-align: left; }
+  .asig-row .asig-fechas .cal-icon { color: #2f6690; }
+  .asig-row .asig-actions { display: flex; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #edf0f3; }
+  .del-btn, .edit-btn { font-weight: 700; cursor: pointer; border: 1px solid; border-radius: 8px; font-size: 13px; padding: 7px 14px; background: #fff; transition: all .15s; }
+  .del-btn { color: #dc2626; border-color: #fecaca; }
+  .del-btn:hover { background: #fef2f2; }
+  .edit-btn { color: #2f6690; border-color: #bfdbfe; }
+  .edit-btn:hover { background: #eff6ff; }
+  .cancel-btn { background: #fff; color: #475569; border: 1px solid #dde1e6; border-radius: 10px; padding: 11px 18px; font-weight: 700; font-size: 13.5px; cursor: pointer; }
+  .asig-edit { background: #f8fafc; border: 1px solid #e6e8ec; border-radius: 12px; padding: 16px; margin-top: 10px; }
+  .asig-edit label { font-size: 12.5px; color: #6b7280; display: block; margin: 8px 0 4px; }
+  .status { text-align: center; font-size: 14.5px; font-weight: 700; color: #fff; background: #16a34a; margin: 10px 0; padding: 12px; border-radius: 10px; }
   .status.error { background: #dc2626; }
-  .warn-box { background: #fff7ed; border: 1px solid #fdba74; border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-size: 12px; color: #9a3412; }
-  .loading, .empty { text-align: center; color: #9aa2ab; font-size: 13px; padding: 20px; }
-  .rotacion-list { font-size: 12px; margin-top: 8px; }
-  .rotacion-list div { padding: 4px 0; border-bottom: 1px solid #f0f1f3; }
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
-  .cal-day { border: 1px solid #e6e8ec; border-radius: 8px; padding: 6px 4px; min-height: 54px; font-size: 10px; text-align: center; }
-  .cal-day .num { font-weight: 700; font-size: 11px; }
-  .cal-day .turno { font-size: 9px; color: #1f3a5f; font-weight: 700; margin-top: 2px; }
+  .warn-box { background: #fff7ed; border: 1px solid #fdba74; border-radius: 10px; padding: 12px 14px; margin-top: 12px; font-size: 13px; color: #9a3412; }
+  .loading, .empty { text-align: center; color: #9aa2ab; font-size: 14px; padding: 24px; }
+  .rotacion-list { font-size: 13px; margin-top: 10px; }
+  .rotacion-list div { padding: 6px 0; border-bottom: 1px solid #f0f1f3; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 12px; }
+  .cal-day { border: 1px solid #e6e8ec; border-radius: 10px; padding: 8px 4px; min-height: 58px; font-size: 11px; text-align: center; }
+  .cal-day .num { font-weight: 700; font-size: 12.5px; }
+  .cal-day .turno { font-size: 10px; color: #1f3a5f; font-weight: 700; margin-top: 3px; }
   .cal-day.vacio { color: #cbd5e1; }
   .cal-day.licencia { background: #e0f2fe; }
 </style>
@@ -231,7 +245,7 @@
       document.getElementById('listado').innerHTML = '<div class="empty">' + (Object.keys(porRut).length === 0 ? 'Todavía no hay asignaciones cargadas.' : 'Nadie calza con ese filtro.') + '</div>';
       return;
     }
-    let html = '';
+    let html = '<div class="listado-grid">';
     ruts.forEach(rut => {
       const p = personalByRut[rut];
       let asigs = porRut[rut];
@@ -250,7 +264,7 @@
             html += '<div class="asig-row">' +
               '<div class="asig-turno">' + (t.Nombre||a.TurnoID) + '</div>' +
               '<div class="asig-chips"><span class="chip-torre">' + (tr.Nombre||a.Torre) + '</span>' + diasChips + '</div>' +
-              '<div class="asig-fechas">' + rango + '</div>' +
+              '<div class="asig-fechas"><span class="cal-icon">📅</span>' + rango + '</div>' +
               '<div class="asig-actions">' +
               '<button class="edit-btn" onclick="empezarEdicion(\'' + a.ID + '\')">Editar</button>' +
               '<button class="del-btn" onclick="eliminar(\'' + a.ID + '\')">Quitar</button>' +
@@ -259,6 +273,7 @@
         });
       html += '</div>';
     });
+    html += '</div>';
     document.getElementById('listado').innerHTML = html;
   }
 
