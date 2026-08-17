@@ -32,6 +32,10 @@
   .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
   .asig-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; background: #f8fafc; border-radius: 8px; padding: 6px 10px; margin-top: 6px; flex-wrap: wrap; gap: 4px; }
   .del-btn { color: #f43f5e; font-weight: 700; cursor: pointer; border: none; background: none; font-size: 13px; }
+  .edit-btn { color: #2f6690; font-weight: 700; cursor: pointer; border: none; background: none; font-size: 13px; }
+  .cancel-btn { background: #fff; color: #475569; border: 1px solid #e6e8ec; border-radius: 10px; padding: 10px 16px; font-weight: 700; font-size: 13px; cursor: pointer; }
+  .asig-edit { background: #f8fafc; border: 1px solid #e6e8ec; border-radius: 10px; padding: 12px; margin-top: 6px; }
+  .asig-edit label { font-size: 11px; color: #6b7280; display: block; margin: 6px 0 3px; }
   .status { text-align: center; font-size: 14px; font-weight: 700; color: #fff; background: #16a34a; margin: 10px 0; padding: 10px; border-radius: 8px; }
   .status.error { background: #dc2626; }
   .warn-box { background: #fff7ed; border: 1px solid #fdba74; border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-size: 12px; color: #9a3412; }
@@ -176,6 +180,8 @@
     renderListado();
   }
 
+  let editandoId = null;
+
   function renderListado() {
     const porRut = {};
     META.asignaciones.forEach(a => { (porRut[a.RUT] = porRut[a.RUT] || []).push(a); });
@@ -198,8 +204,15 @@
           const t = turnosById[a.TurnoID] || {};
           const tr = torresById[a.Torre] || {};
           const rango = (a.FechaInicio || a.FechaFin) ? (a.FechaInicio||'…') + ' → ' + (a.FechaFin||'…') : 'Siempre';
-          html += '<div class="asig-row"><span>' + (t.Nombre||a.TurnoID) + ' · ' + (tr.Nombre||a.Torre) + ' · ' + rango + ' · ' + a['Dias (separados por coma)'] + '</span>' +
-            '<button class="del-btn" onclick="eliminar(\'' + a.ID + '\')">Quitar</button></div>';
+          if (editandoId === a.ID) {
+            html += formularioEdicion(a);
+          } else {
+            html += '<div class="asig-row"><span>' + (t.Nombre||a.TurnoID) + ' · ' + (tr.Nombre||a.Torre) + ' · ' + rango + ' · ' + a['Dias (separados por coma)'] + '</span>' +
+              '<span style="display:flex;gap:10px;">' +
+              '<button class="edit-btn" onclick="empezarEdicion(\'' + a.ID + '\')">Editar</button>' +
+              '<button class="del-btn" onclick="eliminar(\'' + a.ID + '\')">Quitar</button>' +
+              '</span></div>';
+          }
         });
       html += '</div>';
     });
@@ -259,6 +272,72 @@
     fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'eliminarAsignacion', id }) })
       .then(r => r.json()).then(() => cargarMeta())
+      .catch(err => alert('Error: ' + err.message));
+  }
+
+  function empezarEdicion(id) {
+    editandoId = id;
+    renderListado();
+  }
+  function cancelarEdicion() {
+    editandoId = null;
+    renderListado();
+  }
+
+  function formularioEdicion(a) {
+    const torreOpts = META.torres.map(t => '<option value="' + t.ID + '"' + (t.ID===a.Torre?' selected':'') + '>' + t.Nombre + '</option>').join('');
+    const turnoOpts = META.turnos.map(t => '<option value="' + t.ID + '"' + (t.ID===a.TurnoID?' selected':'') + '>' + t.Nombre + ' (' + t.HoraInicio + '-' + t.HoraFin + ')</option>').join('');
+    const diasActuales = (a['Dias (separados por coma)'] || '').split(',').map(s => s.trim());
+    return '<div class="asig-edit" id="edit-' + a.ID + '">' +
+      '<div class="row2">' +
+        '<div><label>Torre</label><select id="ed-torre-' + a.ID + '">' + torreOpts + '</select></div>' +
+        '<div><label>Turno</label><select id="ed-turno-' + a.ID + '">' + turnoOpts + '</select></div>' +
+      '</div>' +
+      '<div class="row2">' +
+        '<div><label>Desde</label><input type="date" id="ed-inicio-' + a.ID + '" value="' + (a.FechaInicio||'') + '"></div>' +
+        '<div><label>Hasta</label><input type="date" id="ed-fin-' + a.ID + '" value="' + (a.FechaFin||'') + '"></div>' +
+      '</div>' +
+      '<label>Días</label>' +
+      '<div class="dias">' + DIAS.map(d => '<div class="dia-btn' + (diasActuales.includes(d)?' active':'') + '" onclick="toggleDiaEdicion(\'' + a.ID + '\',\'' + d + '\')" id="ed-dia-' + a.ID + '-' + d + '">' + d + '</div>').join('') + '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:10px;">' +
+        '<button class="submit-btn" style="margin-top:0;" onclick="guardarEdicionAsignacion(\'' + a.ID + '\')">Guardar</button>' +
+        '<button class="cancel-btn" onclick="cancelarEdicion()">Cancelar</button>' +
+      '</div>' +
+      '<div id="ed-warn-' + a.ID + '"></div>' +
+    '</div>';
+  }
+
+  let diasEdicion = {}; // id -> array de días seleccionados mientras se edita
+  function toggleDiaEdicion(id, d) {
+    if (!diasEdicion[id]) {
+      const actual = META.asignaciones.find(a => a.ID === id);
+      diasEdicion[id] = (actual['Dias (separados por coma)'] || '').split(',').map(s => s.trim());
+    }
+    const el = document.getElementById('ed-dia-' + id + '-' + d);
+    if (diasEdicion[id].includes(d)) { diasEdicion[id] = diasEdicion[id].filter(x => x !== d); el.classList.remove('active'); }
+    else { diasEdicion[id].push(d); el.classList.add('active'); }
+  }
+
+  function guardarEdicionAsignacion(id) {
+    const torre = document.getElementById('ed-torre-' + id).value;
+    const turnoId = document.getElementById('ed-turno-' + id).value;
+    const fechaInicio = document.getElementById('ed-inicio-' + id).value;
+    const fechaFin = document.getElementById('ed-fin-' + id).value;
+    const actual = META.asignaciones.find(a => a.ID === id);
+    const dias = diasEdicion[id] || (actual['Dias (separados por coma)'] || '').split(',').map(s => s.trim());
+    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'editarAsignacion', id, cambios: { torre, turnoId, fechaInicio, fechaFin, dias } }) })
+      .then(r => r.json())
+      .then(res => {
+        if (res.error) throw new Error(res.error);
+        if (res.conflictos && res.conflictos.length) {
+          document.getElementById('ed-warn-' + id).innerHTML = '<div class="warn-box"><b>⚠ Cruce detectado</b> — misma torre y turno ya asignados a:<br>' +
+            res.conflictos.map(c => c.nombre + ' (' + c.fechaInicio + ' → ' + c.fechaFin + ', ' + c.dias + ')').join('<br>') + '</div>';
+        }
+        editandoId = null;
+        delete diasEdicion[id];
+        cargarMeta();
+      })
       .catch(err => alert('Error: ' + err.message));
   }
 
