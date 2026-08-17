@@ -9,18 +9,32 @@
     body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f4f5f7; margin: 0; padding: 0; color: #1b1f27; }
     header { background: linear-gradient(120deg, #1f3a5f, #2f6690); color: #fff; padding: 16px 18px; }
     header h1 { font-size: 16px; margin: 0; }
-    header p { font-size: 12px; opacity: .85; margin: 4px 0 0; }
-    .wrap { padding: 14px; padding-bottom: 90px; }
+    nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
+    nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
+    nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
+    .wrap { padding: 14px; padding-bottom: 90px; max-width: 720px; margin: 0 auto; }
+    .nav-fecha { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .nav-btn { border: 1px solid #e6e8ec; background: #fff; border-radius: 10px; padding: 10px 12px; cursor: pointer; font-size: 13px; font-weight: 700; color: #1f3a5f; flex-shrink: 0; }
+    .fecha-centro { flex: 1; text-align: center; }
+    .fecha-label { font-size: 14px; font-weight: 700; color: #1b1f27; text-transform: capitalize; }
+    .hoy-btn { display: inline-block; margin-top: 4px; background: #1f3a5f; color: #fff; border: none; border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .ir-fecha { text-align: center; margin-bottom: 14px; }
+    .ir-fecha summary { font-size: 12px; color: #6b7280; cursor: pointer; text-decoration: underline; }
+    .ir-fecha input { margin-top: 6px; padding: 8px; border-radius: 8px; border: 1px solid #e6e8ec; font-size: 14px; }
     .licencia-box { background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 12px; color: #075985; }
     .card { background: #fff; border-radius: 14px; padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border: 1px solid #e6e8ec; }
     .nombre { font-weight: 700; font-size: 14px; }
     .meta { font-size: 12px; color: #6b7280; margin-top: 2px; }
     .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
-    .btns { display: flex; gap: 8px; margin-top: 10px; }
-    .btn { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #e6e8ec; background: #fff; font-weight: 700; font-size: 13px; text-align: center; }
-    .btn.presente.active { background: #10b981; color: #fff; border-color: transparent; }
-    .btn.ausente.active { background: #f43f5e; color: #fff; border-color: transparent; }
+    .btns { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .btn { flex: 1; min-width: 64px; padding: 9px 4px; border-radius: 10px; border: 1px solid #e6e8ec; background: #fff; font-weight: 700; font-size: 12px; text-align: center; cursor: pointer; }
+    .btn.p.active { background: #10b981; color: #fff; border-color: transparent; }
+    .btn.t.active { background: #f59e0b; color: #fff; border-color: transparent; }
+    .btn.a.active { background: #f43f5e; color: #fff; border-color: transparent; }
+    .btn.l.active { background: #0ea5e9; color: #fff; border-color: transparent; }
+    .btn.o.active { background: #64748b; color: #fff; border-color: transparent; }
     select.motivo, input.horas { width: 100%; margin-top: 8px; padding: 8px; border-radius: 8px; border: 1px solid #e6e8ec; font-size: 13px; }
+    input.horas.nota-req { border-color: #f59e0b; }
     .ya-marcado { font-size: 11px; color: #16a34a; font-weight: 600; margin-top: 6px; }
     .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e6e8ec; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
     .save-btn { background: #1f3a5f; color: #fff; border: none; border-radius: 10px; padding: 12px 20px; font-weight: 700; font-size: 14px; width: 100%; }
@@ -28,15 +42,11 @@
     .empty { text-align: center; color: #9aa2ab; font-size: 13px; padding: 30px 10px; }
     .status { text-align: center; font-size: 12px; color: #16a34a; margin-bottom: 6px; }
     .loading { text-align: center; padding: 40px; color: #9aa2ab; font-size: 13px; }
-    nav { background: #fff; border-bottom: 1px solid #e6e8ec; overflow-x: auto; white-space: nowrap; }
-    nav a { display: inline-block; padding: 10px 14px; font-size: 13px; color: #475569; text-decoration: none; font-weight: 600; }
-    nav a.active, nav a:hover { color: #1f3a5f; border-bottom: 2px solid #1f3a5f; }
   </style>
 </head>
 <body>
   <header>
     <h1>Asistencia — JDVM</h1>
-    <p id="fechaLabel">Cargando fecha...</p>
   </header>
   <nav>
     <a href="./index.html" class="active">Asistencia</a>
@@ -48,53 +58,82 @@
     <a href="./config.html">Torres/Deptos</a>
     <a href="./alertas.html">Alertas</a>
   </nav>
-  <div class="wrap" id="wrap">
-    <div class="loading">Cargando trabajadores del día...</div>
+  <div class="wrap">
+    <div class="nav-fecha" id="navFecha"></div>
+    <details class="ir-fecha"><summary>Ir a una fecha específica</summary><div id="irFechaBox"></div></details>
+    <div id="contenido">
+      <div class="loading">Cargando trabajadores del día...</div>
+    </div>
   </div>
   <div class="footer">
     <button class="save-btn" id="saveBtn" onclick="guardar()" disabled>Guardar asistencia</button>
   </div>
 
 <script>
-  // Pega acá la URL de tu implementación de Apps Script (Deploy > Nueva implementación > Aplicación web)
-  // Ejemplo: https://script.google.com/macros/s/AKfycb.../exec
   const API_URL = 'https://script.google.com/macros/s/AKfycbw7QqZ8LAUmBjmvqJrc4blBkjfe1igMu24fCyQP9epk0NRwFceQ9kdINitBHvMtD--X/exec';
+  const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const DIAS_LARGO = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 
   let SCHEDULE = [];
   let PERSONAL_ALL = [];
-  const marks = {}; // rut -> {codigo, motivo, horasExtra, reemplazante, motivoHorasExtra}
+  let fechaActual = new Date().toISOString().slice(0, 10);
+  const marks = {}; // rut -> {codigo, motivo, horasExtra, reemplazante, motivoHorasExtra, minutosAtraso, nota}
 
-  Promise.all([
-    fetch(API_URL + '?action=schedule').then(function(r){ return r.json(); }),
-    fetch(API_URL + '?action=meta').then(function(r){ return r.json(); })
-  ]).then(function(results) {
-    PERSONAL_ALL = results[1].personal || [];
-    render(results[0]);
-  }).catch(showError);
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function addDays(iso, n) { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+
+  function etiquetaFecha() {
+    const d = new Date(fechaActual + 'T00:00:00');
+    return DIAS_LARGO[d.getDay()] + ', ' + d.getDate() + ' de ' + MESES[d.getMonth()] + ' de ' + d.getFullYear();
+  }
+
+  function renderNav() {
+    const el = document.getElementById('navFecha');
+    el.innerHTML =
+      '<button class="nav-btn" onclick="mover(-1)">← Día anterior</button>' +
+      '<div class="fecha-centro"><div class="fecha-label">' + etiquetaFecha() + '</div><button class="hoy-btn" onclick="irHoy()">Ir a Hoy</button></div>' +
+      '<button class="nav-btn" onclick="mover(1)">Día siguiente →</button>';
+    document.getElementById('irFechaBox').innerHTML =
+      '<input type="date" value="' + fechaActual + '" onchange="fechaActual = this.value; renderNav(); cargarTodo();">';
+  }
+  function mover(dir) { fechaActual = addDays(fechaActual, dir); renderNav(); cargarTodo(); }
+  function irHoy() { fechaActual = new Date().toISOString().slice(0, 10); renderNav(); cargarTodo(); }
+
+  function cargarTodo() {
+    document.getElementById('contenido').innerHTML = '<div class="loading">Cargando trabajadores del día...</div>';
+    Object.keys(marks).forEach(k => delete marks[k]);
+    updateSaveButton();
+    Promise.all([
+      fetch(API_URL + '?action=schedule&fecha=' + fechaActual).then(function(r){ return r.json(); }),
+      fetch(API_URL + '?action=meta').then(function(r){ return r.json(); })
+    ]).then(function(results) {
+      PERSONAL_ALL = results[1].personal || [];
+      render(results[0]);
+    }).catch(showError);
+  }
 
   function showError(err) {
-    document.getElementById('wrap').innerHTML = '<div class="empty">Error al cargar: ' + err.message + '<br><br>Revisa que API_URL esté configurada en Index.html.</div>';
+    document.getElementById('contenido').innerHTML = '<div class="empty">Error al cargar: ' + err.message + '<br><br>Revisa que API_URL esté configurada en index.html.</div>';
   }
 
   function render(data) {
-    document.getElementById('fechaLabel').textContent = data.fecha + ' · ' + data.diaLabel;
     SCHEDULE = data.trabajadores;
 
     let html = '';
     if (data.conLicenciaHoy && data.conLicenciaHoy.length) {
-      html += '<div class="licencia-box"><b>Con permiso especial hoy:</b><br>' +
+      html += '<div class="licencia-box"><b>Con permiso especial ese día:</b><br>' +
         data.conLicenciaHoy.map(function(p){ return p.nombre + ' — ' + p.tipo + ' hasta ' + p.hasta; }).join('<br>') +
         '</div>';
     }
 
     if (SCHEDULE.length === 0) {
-      html += '<div class="empty">Nadie tiene turno asignado hoy.</div>';
+      html += '<div class="empty">Nadie tiene turno asignado este día.</div>';
     } else {
       SCHEDULE.forEach(function(p) {
         html += cardHtml(p);
       });
     }
-    document.getElementById('wrap').innerHTML = html;
+    document.getElementById('contenido').innerHTML = html;
   }
 
   function cardHtml(p) {
@@ -109,21 +148,30 @@
           '<span class="tag">' + p.turnoNombre + ' (' + p.horaInicio + '-' + p.horaFin + ')</span>' +
         '</div>' +
         (marcado
-          ? '<div class="ya-marcado">Ya marcado hoy: ' + marcado + '</div>'
+          ? '<div class="ya-marcado">Ya marcado ese día: ' + marcado + '</div>'
           : (
             '<div class="btns">' +
-              '<div class="btn presente" onclick="marcar(\'' + p.rut + '\',\'P\')" id="btnP-' + p.rut + '">Presente</div>' +
-              '<div class="btn ausente" onclick="marcar(\'' + p.rut + '\',\'A\')" id="btnA-' + p.rut + '">Ausente</div>' +
+              '<div class="btn p" onclick="marcar(\'' + p.rut + '\',\'P\')" id="btnP-' + p.rut + '">Presente</div>' +
+              '<div class="btn t" onclick="marcar(\'' + p.rut + '\',\'T\')" id="btnT-' + p.rut + '">Atraso</div>' +
+              '<div class="btn a" onclick="marcar(\'' + p.rut + '\',\'A\')" id="btnA-' + p.rut + '">Ausente</div>' +
+              '<div class="btn l" onclick="marcar(\'' + p.rut + '\',\'L\')" id="btnL-' + p.rut + '">Licencia</div>' +
+              '<div class="btn o" onclick="marcar(\'' + p.rut + '\',\'O\')" id="btnO-' + p.rut + '">Otro</div>' +
             '</div>' +
+
             '<select class="motivo" id="motivo-' + p.rut + '" style="display:none" onchange="setCampo(\'' + p.rut + '\',\'motivo\',this.value)">' +
-              '<option value="">Motivo...</option>' +
+              '<option value="">Motivo de la ausencia...</option>' +
               '<option>Médica</option><option>Personal</option><option>Injustificada</option><option>Sin aviso</option>' +
             '</select>' +
+
+            '<input class="horas nota-req" id="atraso-min-' + p.rut + '" style="display:none" type="number" min="0" placeholder="Minutos de atraso" onchange="setCampo(\'' + p.rut + '\',\'minutosAtraso\',this.value)">' +
+
+            '<input class="horas nota-req" id="nota-' + p.rut + '" style="display:none" type="text" placeholder="Nota (obligatoria)" onchange="setCampo(\'' + p.rut + '\',\'nota\',this.value)">' +
+
             '<select class="motivo" id="reemplazante-' + p.rut + '" style="display:none" onchange="setCampo(\'' + p.rut + '\',\'reemplazante\',this.value)">' +
               '<option value="">¿Quién lo reemplaza? (opcional)</option>' + reemplazoOpts +
             '</select>' +
-            '<input class="horas" type="number" min="0" step="0.5" placeholder="Horas extra (opcional)" onchange="setCampo(\'' + p.rut + '\',\'horasExtra\',this.value)">' +
-            '<input class="horas" type="text" placeholder="Motivo de la hora extra (opcional)" onchange="setCampo(\'' + p.rut + '\',\'motivoHorasExtra\',this.value)">'
+            '<input class="horas" id="horasextra-' + p.rut + '" style="display:none" type="number" min="0" step="0.5" placeholder="Horas extra (opcional)" onchange="setCampo(\'' + p.rut + '\',\'horasExtra\',this.value)">' +
+            '<input class="horas" id="motivohoras-' + p.rut + '" style="display:none" type="text" placeholder="Motivo de la hora extra (opcional)" onchange="setCampo(\'' + p.rut + '\',\'motivoHorasExtra\',this.value)">'
           )
         ) +
       '</div>'
@@ -133,10 +181,15 @@
   function marcar(rut, codigo) {
     marks[rut] = marks[rut] || {};
     marks[rut].codigo = codigo;
-    document.getElementById('btnP-' + rut).classList.toggle('active', codigo === 'P');
-    document.getElementById('btnA-' + rut).classList.toggle('active', codigo === 'A');
+    ['P','T','A','L','O'].forEach(c => document.getElementById('btn' + c + '-' + rut).classList.toggle('active', c === codigo));
+
     document.getElementById('motivo-' + rut).style.display = (codigo === 'A') ? 'block' : 'none';
+    document.getElementById('atraso-min-' + rut).style.display = (codigo === 'T') ? 'block' : 'none';
+    // nota obligatoria para todo lo que no sea Presente (y no sea Ausente, que ya tiene su propio motivo estructurado)
+    document.getElementById('nota-' + rut).style.display = (codigo === 'T' || codigo === 'L' || codigo === 'O') ? 'block' : 'none';
     document.getElementById('reemplazante-' + rut).style.display = (codigo === 'A') ? 'block' : 'none';
+    document.getElementById('horasextra-' + rut).style.display = (codigo === 'A') ? 'block' : 'none';
+    document.getElementById('motivohoras-' + rut).style.display = (codigo === 'A') ? 'block' : 'none';
     updateSaveButton();
   }
   function setCampo(rut, campo, v) { marks[rut] = marks[rut] || {}; marks[rut][campo] = v; }
@@ -149,16 +202,33 @@
   }
 
   function guardar() {
+    // validar que las notas obligatorias estén completas antes de guardar
+    const faltantes = [];
+    SCHEDULE.forEach(function(p) {
+      const m = marks[p.rut];
+      if (!m || !m.codigo) return;
+      if (m.codigo === 'A' && !m.motivo) faltantes.push(p.nombre + ' (falta motivo de ausencia)');
+      if (m.codigo === 'T' && (!m.minutosAtraso || !m.nota)) faltantes.push(p.nombre + ' (falta minutos de atraso y/o nota)');
+      if ((m.codigo === 'L' || m.codigo === 'O') && !m.nota) faltantes.push(p.nombre + ' (falta nota)');
+    });
+    if (faltantes.length > 0) {
+      alert('Completa lo siguiente antes de guardar:\n\n' + faltantes.join('\n'));
+      return;
+    }
+
     const records = [];
     SCHEDULE.forEach(function(p) {
       const m = marks[p.rut];
       if (m && m.codigo) {
         const reemplazanteNombre = m.reemplazante ? (PERSONAL_ALL.find(x => x.rut === m.reemplazante) || {}).nombre : '';
+        // para Atraso/Licencia/Otro, la nota va en el mismo campo "motivo" para quedar guardada
+        const motivoFinal = m.codigo === 'A' ? (m.motivo || '') : (m.nota || '');
         records.push({
           rut: p.rut, nombre: p.nombre, codigo: m.codigo,
-          motivo: m.motivo || '', horasExtra: m.horasExtra || '',
+          motivo: motivoFinal, horasExtra: m.horasExtra || '',
           torre: p.torre, turnoNombre: p.turnoNombre,
-          reemplazante: reemplazanteNombre || '', motivoHorasExtra: m.motivoHorasExtra || ''
+          reemplazante: reemplazanteNombre || '', motivoHorasExtra: m.motivoHorasExtra || '',
+          minutosAtraso: m.minutosAtraso || ''
         });
       }
     });
@@ -169,19 +239,22 @@
     fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita el preflight CORS que Apps Script no responde
-      body: JSON.stringify({ action: 'submit', records: records })
+      body: JSON.stringify({ action: 'submit', fecha: fechaActual, records: records })
     })
       .then(function(r){ return r.json(); })
       .then(function(res) {
         if (res.error) throw new Error(res.error);
-        document.getElementById('wrap').innerHTML = '<div class="status">✓ Guardado — ' + res.count + ' registro(s)</div>';
-        setTimeout(function(){ location.reload(); }, 1200);
+        document.getElementById('contenido').innerHTML = '<div class="status">✓ Guardado — ' + res.count + ' registro(s)</div>';
+        setTimeout(function(){ cargarTodo(); }, 1000);
       })
       .catch(function(err) {
         alert('Error al guardar: ' + err.message);
         document.getElementById('saveBtn').disabled = false;
       });
   }
+
+  renderNav();
+  cargarTodo();
 </script>
 </body>
 </html>
