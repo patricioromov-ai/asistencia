@@ -20,6 +20,7 @@
   .card h3 { font-size: 14px; margin: 0 0 10px; }
   label { font-size: 12px; color: #6b7280; display: block; margin: 10px 0 4px; }
   select, input { width: 100%; padding: 9px; border-radius: 8px; border: 1px solid #e6e8ec; font-size: 14px; }
+  #filtrosAsignaciones select, #filtrosAsignaciones input { width: auto; font-size: 13px; padding: 7px 9px; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .dias { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
   .dia-btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #e6e8ec; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
@@ -30,7 +31,9 @@
   .persona-block:last-child { border-bottom: none; }
   .nombre { font-weight: 700; font-size: 13px; }
   .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef2f7; color: #475569; margin-right: 4px; }
-  .asig-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; background: #f8fafc; border-radius: 8px; padding: 6px 10px; margin-top: 6px; flex-wrap: wrap; gap: 4px; }
+  .asig-row { background: #f8fafc; border-radius: 8px; padding: 8px 10px; margin-top: 6px; }
+  .asig-row .asig-info { font-size: 12px; color: #475569; line-height: 1.4; }
+  .asig-row .asig-actions { display: flex; gap: 14px; margin-top: 6px; }
   .del-btn { color: #f43f5e; font-weight: 700; cursor: pointer; border: none; background: none; font-size: 13px; }
   .edit-btn { color: #2f6690; font-weight: 700; cursor: pointer; border: none; background: none; font-size: 13px; }
   .cancel-btn { background: #fff; color: #475569; border: 1px solid #e6e8ec; border-radius: 10px; padding: 10px 16px; font-weight: 700; font-size: 13px; cursor: pointer; }
@@ -93,6 +96,7 @@
 
       <div class="card">
         <h3>Asignaciones actuales</h3>
+        <div id="filtrosAsignaciones" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
         <div id="listado" class="loading">Cargando...</div>
       </div>
     </div>
@@ -177,10 +181,25 @@
     document.getElementById('rotDiasWrap').innerHTML = DIAS.map(d => '<div class="dia-btn" onclick="toggleRotDia(\'' + d + '\')" id="rotdia-' + d + '">' + d + '</div>').join('');
 
     renderSecuencia();
+    renderFiltros();
     renderListado();
   }
 
   let editandoId = null;
+  let filtroTexto = '';
+  let filtroTorre = '';
+  let filtroDepto = '';
+
+  function renderFiltros() {
+    const cont = document.getElementById('filtrosAsignaciones');
+    if (!cont) return;
+    const torreOpts = META.torres.map(t => '<option value="' + t.ID + '"' + (t.ID===filtroTorre?' selected':'') + '>' + t.Nombre + '</option>').join('');
+    const deptoOpts = META.departamentos.map(d => '<option value="' + d.Nombre + '"' + (d.Nombre===filtroDepto?' selected':'') + '>' + d.Nombre + '</option>').join('');
+    cont.innerHTML =
+      '<input type="text" id="buscarAsig" placeholder="Buscar por nombre..." value="' + filtroTexto + '" oninput="filtroTexto=this.value;renderListado();" style="flex:1;min-width:160px;">' +
+      '<select onchange="filtroTorre=this.value;renderListado();"><option value="">Todas las torres</option>' + torreOpts + '</select>' +
+      '<select onchange="filtroDepto=this.value;renderListado();"><option value="">Todos los departamentos</option>' + deptoOpts + '</select>';
+  }
 
   function renderListado() {
     const porRut = {};
@@ -189,16 +208,32 @@
     const torresById = {}; META.torres.forEach(t => torresById[t.ID] = t);
     const personalByRut = {}; META.personal.forEach(p => personalByRut[p.rut] = p);
 
-    const ruts = Object.keys(porRut);
+    let ruts = Object.keys(porRut);
+    // filtro por texto (nombre)
+    if (filtroTexto.trim()) {
+      const q = filtroTexto.trim().toLowerCase();
+      ruts = ruts.filter(rut => (personalByRut[rut] ? personalByRut[rut].nombre : rut).toLowerCase().includes(q));
+    }
+    // filtro por departamento de la persona
+    if (filtroDepto) {
+      ruts = ruts.filter(rut => personalByRut[rut] && personalByRut[rut].depto === filtroDepto);
+    }
+    // filtro por torre: solo mostrar personas que tengan AL MENOS una asignación en esa torre
+    if (filtroTorre) {
+      ruts = ruts.filter(rut => porRut[rut].some(a => a.Torre === filtroTorre));
+    }
+
     if (ruts.length === 0) {
-      document.getElementById('listado').innerHTML = '<div class="empty">Todavía no hay asignaciones cargadas.</div>';
+      document.getElementById('listado').innerHTML = '<div class="empty">' + (Object.keys(porRut).length === 0 ? 'Todavía no hay asignaciones cargadas.' : 'Nadie calza con ese filtro.') + '</div>';
       return;
     }
     let html = '';
     ruts.forEach(rut => {
       const p = personalByRut[rut];
+      let asigs = porRut[rut];
+      if (filtroTorre) asigs = asigs.filter(a => a.Torre === filtroTorre);
       html += '<div class="persona-block"><div class="nombre">' + (p ? p.nombre : rut) + '</div>';
-      porRut[rut]
+      asigs
         .sort((a,b) => (a.FechaInicio||'').localeCompare(b.FechaInicio||''))
         .forEach(a => {
           const t = turnosById[a.TurnoID] || {};
@@ -207,11 +242,12 @@
           if (editandoId === a.ID) {
             html += formularioEdicion(a);
           } else {
-            html += '<div class="asig-row"><span>' + (t.Nombre||a.TurnoID) + ' · ' + (tr.Nombre||a.Torre) + ' · ' + rango + ' · ' + a['Dias (separados por coma)'] + '</span>' +
-              '<span style="display:flex;gap:10px;">' +
+            html += '<div class="asig-row">' +
+              '<div class="asig-info">' + (t.Nombre||a.TurnoID) + ' · ' + (tr.Nombre||a.Torre) + ' · ' + rango + ' · ' + a['Dias (separados por coma)'] + '</div>' +
+              '<div class="asig-actions">' +
               '<button class="edit-btn" onclick="empezarEdicion(\'' + a.ID + '\')">Editar</button>' +
               '<button class="del-btn" onclick="eliminar(\'' + a.ID + '\')">Quitar</button>' +
-              '</span></div>';
+              '</div></div>';
           }
         });
       html += '</div>';
