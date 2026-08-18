@@ -88,6 +88,7 @@
     <div class="subtabs">
       <button class="subtab-btn active" id="tab-simple" onclick="cambiarTab('simple')">Asignación puntual</button>
       <button class="subtab-btn" id="tab-rotacion" onclick="cambiarTab('rotacion')">Generar rotación (varias semanas)</button>
+      <button class="subtab-btn" id="tab-multiple" onclick="cambiarTab('multiple')">Aplicar patrón a varios</button>
       <button class="subtab-btn" id="tab-calendario" onclick="cambiarTab('calendario')">Ver calendario</button>
     </div>
 
@@ -143,6 +144,39 @@
       </div>
     </div>
 
+    <!-- ===== APLICAR PATRÓN A VARIOS ===== -->
+    <div id="panel-multiple" style="display:none;">
+      <div class="card">
+        <h3>Aplicar el mismo patrón a varias personas</h3>
+        <p>Útil cuando un grupo (ej. auxiliares) tiene un horario que cambia según el día — arma el patrón una vez y aplícalo a todos de golpe.</p>
+
+        <label>Personas (marca todas las que correspondan)</label>
+        <input type="text" id="mulBuscar" placeholder="Buscar por nombre..." oninput="renderMulPersonas()" style="margin-bottom:8px;">
+        <div id="mulPersonasWrap" style="max-height:220px;overflow-y:auto;border:1px solid #e6e8ec;border-radius:10px;padding:10px;"></div>
+
+        <label>Torre</label>
+        <select id="mulTorre"></select>
+
+        <label>Patrón semanal — agrega uno o más bloques de turno + días</label>
+        <div class="row2">
+          <select id="mulTurnoSelect"></select>
+          <button type="button" class="submit-btn" style="margin-top:0;" onclick="agregarBloquePatron()">+ Agregar bloque al patrón</button>
+        </div>
+        <div class="dias" id="mulDiasWrap"></div>
+        <div id="mulPatronList" style="margin-top:10px;font-size:13px;"></div>
+
+        <label>Vigencia (opcional — vacío = siempre)</label>
+        <div class="row2">
+          <div><label style="margin-top:0;">Desde</label><input type="date" id="mulFechaInicio"></div>
+          <div><label style="margin-top:0;">Hasta</label><input type="date" id="mulFechaFin"></div>
+        </div>
+
+        <button class="submit-btn" onclick="aplicarPatronMultiple()">Aplicar patrón</button>
+        <div id="mulStatus"></div>
+        <div id="mulWarnBox"></div>
+      </div>
+    </div>
+
     <!-- ===== CALENDARIO ===== -->
     <div id="panel-calendario" style="display:none;">
       <div class="card">
@@ -168,7 +202,7 @@
   cargarMeta();
 
   function cambiarTab(tab) {
-    ['simple','rotacion','calendario'].forEach(t => {
+    ['simple','rotacion','multiple','calendario'].forEach(t => {
       document.getElementById('panel-' + t).style.display = (t === tab) ? 'block' : 'none';
       document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     });
@@ -190,14 +224,19 @@
     const torreOpts = META.torres.map(t => '<option value="' + t.ID + '">' + t.Nombre + '</option>').join('');
     document.getElementById('selTorre').innerHTML = torreOpts;
     document.getElementById('rotTorre').innerHTML = torreOpts;
+    document.getElementById('mulTorre').innerHTML = torreOpts;
 
     const turnoOpts = META.turnos.map(t => '<option value="' + t.ID + '">' + t.Nombre + ' (' + t.HoraInicio + '-' + t.HoraFin + ', ' + t.DuracionHoras + 'h)</option>').join('');
     document.getElementById('selTurno').innerHTML = turnoOpts;
     document.getElementById('rotTurnoSelect').innerHTML = turnoOpts;
+    document.getElementById('mulTurnoSelect').innerHTML = turnoOpts;
 
     document.getElementById('diasWrap').innerHTML = DIAS.map(d => '<div class="dia-btn" onclick="toggleDia(\'' + d + '\')" id="dia-' + d + '">' + d + '</div>').join('');
     document.getElementById('rotDiasWrap').innerHTML = DIAS.map(d => '<div class="dia-btn" onclick="toggleRotDia(\'' + d + '\')" id="rotdia-' + d + '">' + d + '</div>').join('');
+    document.getElementById('mulDiasWrap').innerHTML = DIAS.map(d => '<div class="dia-btn" onclick="toggleMulDia(\'' + d + '\')" id="muldia-' + d + '">' + d + '</div>').join('');
 
+    renderMulPersonas();
+    renderMulPatron();
     renderSecuencia();
     renderFiltros();
     renderListado();
@@ -441,6 +480,77 @@
         cargarMeta();
       })
       .catch(err => { mostrarStatus('rotStatus', 'Error: ' + err.message, true); });
+  }
+
+  /* ===== APLICAR PATRÓN A VARIOS ===== */
+  let mulSeleccionados = [];
+  let mulDias = [];
+  let mulPatron = []; // [{turnoId, dias:[...]}]
+
+  function renderMulPersonas() {
+    const q = (document.getElementById('mulBuscar').value || '').trim().toLowerCase();
+    const lista = META.personal.filter(p => !q || p.nombre.toLowerCase().includes(q));
+    document.getElementById('mulPersonasWrap').innerHTML = lista.map(p =>
+      '<label style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px;cursor:pointer;">' +
+      '<input type="checkbox" ' + (mulSeleccionados.includes(p.rut)?'checked':'') + ' onchange="toggleMulPersona(\'' + p.rut + '\')" style="width:auto;">' +
+      p.nombre + ' <span style="color:#94a3b8;font-size:12px;">(' + p.depto + ')</span></label>'
+    ).join('') || '<div class="empty" style="padding:10px;">Sin resultados.</div>';
+  }
+  function toggleMulPersona(rut) {
+    if (mulSeleccionados.includes(rut)) mulSeleccionados = mulSeleccionados.filter(r => r !== rut);
+    else mulSeleccionados.push(rut);
+  }
+
+  function toggleMulDia(d) {
+    const el = document.getElementById('muldia-' + d);
+    if (mulDias.includes(d)) { mulDias = mulDias.filter(x => x !== d); el.classList.remove('active'); }
+    else { mulDias.push(d); el.classList.add('active'); }
+  }
+
+  function agregarBloquePatron() {
+    const turnoId = document.getElementById('mulTurnoSelect').value;
+    if (!turnoId || mulDias.length === 0) { mostrarStatus('mulStatus', 'Elige un turno y al menos un día para agregar el bloque.', true); return; }
+    mulPatron.push({ turnoId, dias: [...mulDias] });
+    mulDias = [];
+    document.querySelectorAll('#mulDiasWrap .dia-btn').forEach(el => el.classList.remove('active'));
+    renderMulPatron();
+  }
+  function quitarBloquePatron(idx) { mulPatron.splice(idx, 1); renderMulPatron(); }
+
+  function renderMulPatron() {
+    const turnosById = {}; META.turnos.forEach(t => turnosById[t.ID] = t);
+    document.getElementById('mulPatronList').innerHTML = mulPatron.map((b, i) => {
+      const t = turnosById[b.turnoId] || {};
+      return '<div class="asig-row" style="margin-top:8px;"><div class="asig-turno">' + (t.Nombre||b.turnoId) + '</div>' +
+        '<div class="asig-chips">' + b.dias.map(d => '<span class="chip-dia">' + d + '</span>').join('') + '</div>' +
+        '<div class="asig-actions"><button class="del-btn" onclick="quitarBloquePatron(' + i + ')">Quitar del patrón</button></div></div>';
+    }).join('') || '<div style="color:#9aa2ab;font-size:12.5px;">Aún no agregas bloques al patrón.</div>';
+  }
+
+  function aplicarPatronMultiple() {
+    const torre = document.getElementById('mulTorre').value;
+    const fechaInicio = document.getElementById('mulFechaInicio').value;
+    const fechaFin = document.getElementById('mulFechaFin').value;
+    if (mulSeleccionados.length === 0 || !torre || mulPatron.length === 0) {
+      mostrarStatus('mulStatus', 'Selecciona al menos una persona, una torre, y arma el patrón con al menos un bloque.', true);
+      return;
+    }
+    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'aplicarPatron', patronMultiple: { ruts: mulSeleccionados, torre, patron: mulPatron, fechaInicio, fechaFin } }) })
+      .then(r => r.json())
+      .then(res => {
+        if (res.error) throw new Error(res.error);
+        mostrarStatus('mulStatus', '✓ ' + res.creadas.length + ' asignaciones creadas (' + mulSeleccionados.length + ' personas × ' + mulPatron.length + ' bloques)', false);
+        if (res.conflictos && res.conflictos.length) {
+          document.getElementById('mulWarnBox').innerHTML = '<div class="warn-box"><b>⚠ Se detectaron cruces en ' + res.conflictos.length + ' caso(s)</b> — revisa el listado de Asignación puntual para más detalle.</div>';
+        } else {
+          document.getElementById('mulWarnBox').innerHTML = '';
+        }
+        mulPatron = [];
+        renderMulPatron();
+        cargarMeta();
+      })
+      .catch(err => { mostrarStatus('mulStatus', 'Error: ' + err.message, true); });
   }
 
   /* ===== CALENDARIO ===== */
