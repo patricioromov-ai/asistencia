@@ -203,16 +203,20 @@
 
   function marcar(rut, codigo) {
     marks[rut] = marks[rut] || {};
-    marks[rut].codigo = codigo;
-    ['P','T','A','L','O'].forEach(c => document.getElementById('btn' + c + '-' + rut).classList.toggle('active', c === codigo));
+    // si tocan el mismo botón que ya estaba activo, se desmarca (vuelve a "sin marcar")
+    const yaEstabaActivo = marks[rut].codigo === codigo;
+    marks[rut].codigo = yaEstabaActivo ? undefined : codigo;
+    const codigoFinal = marks[rut].codigo;
 
-    document.getElementById('motivo-' + rut).style.display = (codigo === 'A') ? 'block' : 'none';
-    document.getElementById('atraso-min-' + rut).style.display = (codigo === 'T') ? 'block' : 'none';
+    ['P','T','A','L','O'].forEach(c => document.getElementById('btn' + c + '-' + rut).classList.toggle('active', c === codigoFinal));
+
+    document.getElementById('motivo-' + rut).style.display = (codigoFinal === 'A') ? 'block' : 'none';
+    document.getElementById('atraso-min-' + rut).style.display = (codigoFinal === 'T') ? 'block' : 'none';
     // nota obligatoria para todo lo que no sea Presente (y no sea Ausente, que ya tiene su propio motivo estructurado)
-    document.getElementById('nota-' + rut).style.display = (codigo === 'T' || codigo === 'L' || codigo === 'O') ? 'block' : 'none';
-    document.getElementById('reemplazante-' + rut).style.display = (codigo === 'A') ? 'block' : 'none';
-    document.getElementById('horasextra-' + rut).style.display = (codigo === 'A') ? 'block' : 'none';
-    document.getElementById('motivohoras-' + rut).style.display = (codigo === 'A') ? 'block' : 'none';
+    document.getElementById('nota-' + rut).style.display = (codigoFinal === 'T' || codigoFinal === 'L' || codigoFinal === 'O') ? 'block' : 'none';
+    document.getElementById('reemplazante-' + rut).style.display = (codigoFinal === 'A') ? 'block' : 'none';
+    document.getElementById('horasextra-' + rut).style.display = (codigoFinal === 'A') ? 'block' : 'none';
+    document.getElementById('motivohoras-' + rut).style.display = (codigoFinal === 'A') ? 'block' : 'none';
     updateSaveButton();
   }
   function setCampo(rut, campo, v) { marks[rut] = marks[rut] || {}; marks[rut][campo] = v; }
